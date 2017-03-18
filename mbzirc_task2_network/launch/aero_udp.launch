@@ -25,14 +25,14 @@
       <rosparam subst_value="true">
         message: "$(arg msg_file)"
         to_port: $(arg IMAGE_PORT)
-        send_rate: 5
+        send_rate: 1
         to_ip: "$(arg REMOTE_IP)"
       </rosparam>
 
     </node>
     <node pkg="jsk_network_tools" type="silverhammer_highspeed_receiver.py"
           output="screen"
-          name="joy_receiver">
+          name="joy_receiver" respawn="true">
       <rosparam subst_value="true">
         message: mbzirc_task2_network/Remote_Joy
         receive_port: $(arg JOY_PORT)
