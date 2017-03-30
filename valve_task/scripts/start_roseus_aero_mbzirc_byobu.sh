@@ -51,4 +51,10 @@ byobu-tmux send-keys -t utils "/opt/ros/`rosversion -d`/bin/roslaunch aero_utils
 byobu-tmux send-keys -t roseus "rosnode kill /aero_servo_controller_service" C-m
 byobu-tmux send-keys -t roseus "rlwrap roseus `rospack find valve_task`/euslisp/start-roseus-aero-mbzirc.l" C-m
 
+byobu-tmux new-window -n hokuyo 
+byobu-tmux send-keys -t hokuyo "/opt/ros/`rosversion -d`/bin/roslaunch hokuyo_node hokuyo_test.launch" C-m
+byobu-tmux new-window -n statemachine
+byobu-tmux send-keys -t statemachine "rlwrap roseus `rospack find mbzirc_task2_control`/euslisp/main.l" C-m
+
+
 byobu-tmux attach-session -t aero-mbzirc

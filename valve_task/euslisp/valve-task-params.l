@@ -1,4 +1,4 @@
-(setq wrenchSize 22) 
+(setq wrenchSize 19) 
 
 (cond
  ((equal wrenchSize 15) (setq wrenchLength 165))

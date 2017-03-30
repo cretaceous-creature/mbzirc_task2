@@ -25,6 +25,8 @@
     ;; (print "in callbackJoy")
 
     ;; make sure only use newer msg, and not old msg with using UDP communication
+    (format t "prevMsgTime ~a~%" prevMsgTime)
+    (format t "(send joyState :header :stamp) ~a~%"  (send joyState :header :stamp))
     (if (not (ros::time< prevMsgTime (send joyState :header :stamp)))
             (setq joyState (instance sensor_msgs::Joy :init))
         )
@@ -334,15 +336,11 @@
       (progn
           (if (or (> (abs LStick_UD) stick_thre) (> (abs LStick_LR) stick_thre) (> (abs RStick_LR) stick_thre))
                   (progn
-                      (if (< L2 trigger_thre) ;; if L2 pressed, boost mode 
+                      (if (< L2 trigger_thre) ;; if L2 pressed, fine mode 
                               (progn
-                                  ;; (setq moveBaseGainX 200)
-                                  ;; (setq moveBaseGainY 20)
-                                  ;; (setq moveBaseGainTheta 200)
-                                  (setq moveBaseGainX 400)
+                                  (setq moveBaseGainX 200)
                                   (setq moveBaseGainY 20)
                                   (setq moveBaseGainTheta 200)
-
                                   )
                           (progn ;; regular speed
                               (setq moveBaseGainX 10)
@@ -504,6 +502,7 @@
             )
         )
     (setq executing_joycb nil)
+    (setq prev_seq curr_seq)
     (setq prevMsgTime (send joyState :header :stamp))
     )
 
