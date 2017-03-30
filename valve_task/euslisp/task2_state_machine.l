@@ -11,7 +11,7 @@
 (load "package://valve_task/euslisp/aero-arm-turn-wrench-torso.l")
 (load "package://valve_task/euslisp/laser-panel-detector.l")
 
-(setq targetDistFromWall 0.5)
+(setq targetDistFromWall 4)
 (setq startPanelY 4.0) ;; how far the panel is in the y direction from the start point, in meters.
 
 (defun debugPrint (msg)

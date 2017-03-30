@@ -1,0 +1,179 @@
+(load "package://aero_utils/euslisp/aero-arm-single-wrist-utils.l")
+
+
+(setq isMoveRIBase nil)
+(setq cartWidth 0.5) ;; units in m !!!
+
+(defun prompt (msg)
+    (if debug
+            (progn
+                (print msg)
+                (read-char)))
+    )
+
+
+(defun getSingleXDist (index) 
+    (* (elt ranges index) (cos  (+ angle_min (* index angle_increment))))
+    )
+
+(defun getSingleYDist (index) 
+    (* (elt ranges index) (sin  (+ angle_min (* index angle_increment))))
+    )
+
+(defun getIndex ()
+    )
+
+(defun isThereObstacleWithinDist (distX)
+
+    (setq angle_limit (atan (/ (/ cartWidth 2.0) distX)))
+    (setq minIndex (round (/ (- (- angle_limit) angle_min) angle_increment)))
+    (setq maxIndex (round (/ (- angle_limit angle_min) angle_increment)))
+
+    (setq index minIndex)
+    (setq pointsWithinDistXcount 0.0)
+    (while (< index maxIndex)
+        (format t "index ~f : xdist ~f~%" index (getSingleXDist index))
+        (if ( < (getSingleXDist index) distX)
+                (setq pointsWithinDistXcount (+ pointsWithinDistXcount 1.0)))
+        (setq index (+ index 1))
+        )
+    (format t "% points with in distx ~f : ~f~%" distx (/ pointsWithinDistXcount (- maxIndex minIndex)))
+    (/ pointsWithinDistXcount (- maxIndex minIndex)) 
+    )
+
+(defun callbackScan (msg)
+    (format t "in callbackScan")
+    (format t "size ~d~%" (length (send msg :ranges)))
+
+    (format t "range [0] ~f~%" (elt (send msg :ranges) 0))
+
+    
+    (setq angle_min (send msg :angle_min))
+    (setq angle_max (send msg :angle_max))
+    (setq angle_increment (send msg :angle_increment))
+    (setq ranges (send msg :ranges))
+ 
+    (format t "x front  ~f~%" (getsinglexdist 360))
+    (isthereobstacleWithinDist 2.0)
+      
+    )
+
+(defun detect-panel-move-base (vel_x vel_y vel_theta time_msec)
+    (if (not isMoveRIBase)
+            (progn
+                (format t "isMoveRIBase is nil!!!~%")
+                (return-from detect-panel-move-base nil))
+        )
+    (setq twist_msg (instance geometry_msgs::TwistStamped :init))
+    (send twist_msg :twist :linear :x vel_x)
+    (send twist_msg :twist :linear :y vel_y)
+    (send twist_msg :twist :angular :z vel_theta)
+    (send twist_msg :header :stamp (instance ros::time :init :nsec (* time_msec 1000 1000)))
+    
+    (format t "sending x y theta time ~a ~a ~a ~a~%"
+            (send twist_msg :twist :linear :x)
+            (send twist_msg :twist :linear :y)
+            (send twist_msg :twist :angular :z)
+            (send twist_msg :header :stamp))
+    
+    (ros::publish "move_base_simple/velocity" twist_msg)
+    )
+
+(defun move-until-wall-within-xdist (xdist)
+    (format t "entered move-until-wall-within-xdist~%")
+    (setq isThereObstacleWithinDistResult (isThereObstacleWithinDist xdist))
+    (while (< isThereObstacleWithinDistResult 0.5)
+        (ros::spin-once)
+        (format t "isThereObstacleWithinDist ~f returned ~f~%" xdist isThereObstacleWithinDistResult)
+        (format t "moving base")
+        (detect-panel-move-base 5 0 0 50)
+        )
+    (format t "isThereObstacleWithinDist ~f returned ~f~%" xdist isThereObstacleWithinDistResult)
+    (format t "exiting~%")
+    )
+
+(defun ransacLine ()
+
+    ;; select 2 data points at random
+
+    (setq iterations 30) 
+
+        
+    (setq bestInlierIndice (list))
+    (setq bestOutlierIndice (list))
+    (setq bestSlope 0)
+    (setq bestIntercept 0)
+
+    (setq inlierIndice (list))
+    (setq outlierIndice (list))
+    
+    (setq iterationCount 0)
+    (while (< iteration interationCount)
+                                         
+        (setq randIndex (random (length ranges)))
+        (setq x0 (getSingleXDist randIndex))
+        (setq y0 (getSingleYDist randIndex))
+        (setq randIndex (random (length ranges)))
+        (setq x1 (getSingleXDist randIndex))
+        (setq y1 (getSingleYDist randIndex))
+        
+        (setq slope (/ (- y1 y0) (- x1 x0)))
+        (setq intercept (- y1 (* slope x1)))
+
+        (setq index 1)
+        (setq lineErrorThres 4.0)
+        ;; calculate error of each point 
+        (while (< index (length ranges))
+            (if (< (lineError slope intercept lineErrorThres))
+                    (append inlierIndice index)
+                (append outlierIndice index))
+            (setq index (+ index 1)))
+
+        ;; if the current line is better than the best line so far
+        (if (> (length inlierIndices) (length bestInlierIndices))
+                (progn
+                    (setq bestInlierIndices inlierIndices)
+                    (setq bestoutlierIndices outlierIndices)
+                    (setq bestSlope slope)
+                    (setq bestIntercept intercept)
+                    )
+            )
+        )
+    (format t "bestSlope ~f~%" bestSlope)
+    (format t "bestIntercept ~f~%" bestIntercept)
+    )
+
+(defun lineError (slope intercept pointx pointy)
+    (setq term1 (-
+                 (/
+                  (+ pointx (* slope pointy) (- (* slope intercept)))
+                  (+ (* slope slope) 1)
+                  )
+                 pointx))
+    (setq term2 (*
+                 (slope
+                  (+
+                   (/
+                    (+ pointx (* slope pointy) (- (* slope intercept)))
+                    (+ (* slope slope) 1)
+                    )
+                   )
+                  intercept
+                  (- pointy)
+                  )
+                 ))
+    (setq error (sqrt (* term1 term1) (* term2 term2)))
+    )
+
+    
+(ros::roseus "aero_ps3_joy_mbzirc_teleop")
+
+(ros::subscribe "/scan"
+                sensor_msgs::LaserScan
+                #'callbackScan 1)
+
+;; (ros::rate 10)
+;; (while (ros::ok)
+    ;; (ros::spin-once)
+    ;; (ros::sleep)
+    ;; )
