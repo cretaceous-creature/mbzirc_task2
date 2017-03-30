@@ -2,10 +2,6 @@
 PROGNAME=$(basename $0)
 LOCAL_IP="192.168.97.136"
 REMOTE_IP="192.168.96.188"
-#LOCAL_IP="10.207.0.14"
-#REMOTE_IP="10.207.0.12"
-
-
 
 usage() {
   echo "Usage: $PROGNAME [option]"

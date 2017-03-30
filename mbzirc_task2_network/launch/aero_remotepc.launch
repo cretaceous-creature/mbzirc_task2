@@ -22,7 +22,8 @@
     <!-- OCS to FC -->
     <node pkg="jsk_network_tools" type="silverhammer_highspeed_streamer.py"
           output="screen"
-          name="joy_streamer">
+          name="joy_streamer"
+          respawn="true">
       <rosparam subst_value="true">
         message: mbzirc_task2_network/Remote_Joy
         to_port: $(arg JOY_PORT)
@@ -32,7 +33,8 @@
     </node>
     <node pkg="jsk_network_tools" type="silverhammer_highspeed_receiver.py"
           output="screen"
-          name="image_receiver">
+          name="image_receiver"
+          respawn="true">
       <rosparam subst_value="true">
         message: $(arg msg_file)
         receive_port: $(arg IMAGE_PORT)

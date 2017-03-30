@@ -30,7 +30,15 @@ class Aero:
                 tx_scale = 31.0
                 ty_scale = 33.0
                 tz_scale = 21.0
-                
+
+                # Parameters for FT sensor Tepura label "B") 
+                # fx_scale = 1417.0
+                # fy_scale = 1642.0
+                # fz_scale = 1992.0
+                # tx_scale = 33.0
+                # ty_scale = 35.0
+                # tz_scale = 22.0                
+
                 fx = (self.POS[9] - 32768.0)  * fx_scale/32768.0
                 fy = (self.POS[10] - 32768.0)  * fy_scale/32768.0
                 fz = (self.POS[11] - 32768.0)  * fz_scale/32768.0
