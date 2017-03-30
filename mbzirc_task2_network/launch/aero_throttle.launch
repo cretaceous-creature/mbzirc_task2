@@ -34,7 +34,7 @@
     </node>
     <node pkg="nodelet" type="nodelet" name="handeye_throttle"
           args="load mbzirc_task2_utils/image_throttle handeye_nodelet_manager" output="log"  respawn="true">
-      <remap from="/handeye/topic_in"  to="/handeye/image_color"/>
+      <remap from="/handeye/topic_in"  to="/handeye/image_raw"/>
       <remap from="/handeye/topic_out" to="/handeye/image_color_throttle"/>
       <param name="update_rate" value="$(arg rate)" />
     </node>
