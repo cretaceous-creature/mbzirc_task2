@@ -6,8 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Wrench_ROI1/Shape1
-        - /LaserScan1
-        - /Image1
+        - /BoundingBoxArray1
       Splitter Ratio: 0.5
     Tree Height: 437
   - Class: rviz/Selection
@@ -197,6 +196,8 @@ Visualization Manager:
           Value: true
         rarm_ft_sensor_frame:
           Value: true
+        valve:
+          Value: true
         zed_current_frame:
           Value: true
         zed_initial_frame:
@@ -214,9 +215,6 @@ Visualization Manager:
                 leg_foreleg_ankle:
                   laser:
                     {}
-                  leg_hindleg_ankle:
-                    ground:
-                      {}
           r_shoulder_link:
             r_upperarm_link:
               r_elbow_link:
@@ -234,6 +232,8 @@ Visualization Manager:
                         {}
                     rarm_ft_sensor_frame:
                       {}
+            valve:
+              {}
             zed_current_frame:
               ZED_left_camera:
                 ZED_center:
@@ -242,6 +242,9 @@ Visualization Manager:
                   {}
               zed_initial_frame:
                 {}
+        leg_hindleg_ankle:
+          ground:
+            {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -316,11 +319,11 @@ Visualization Manager:
       Use rainbow: true
       Value: true
     - Class: jsk_rviz_plugin/BoundingBox
-      Enabled: false
+      Enabled: true
       Name: extracted_panel
       Topic: /extract_panel_cluster/output
       Unreliable: false
-      Value: false
+      Value: true
       alpha: 0.8
       color: 255; 0; 0
       coloring: Flat color
@@ -337,7 +340,7 @@ Visualization Manager:
       color: 25; 255; 0
       coloring: Flat color
       line width: 1
-      only edge: false
+      only edge: true
       show coords: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
@@ -495,6 +498,18 @@ Visualization Manager:
       Transport Hint: raw
       Unreliable: false
       Value: true
+    - Class: jsk_rviz_plugin/BoundingBoxArray
+      Enabled: true
+      Name: BoundingBoxArray
+      Topic: /panel_candidate_point_indices_decomposer/boxes
+      Unreliable: false
+      Value: true
+      alpha: 0.8
+      color: 25; 255; 0
+      coloring: Auto
+      line width: 0.005
+      only edge: false
+      show coords: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -519,19 +534,19 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 4.24285
+      Distance: 3.29994
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.505155
-        Y: -0.000821478
-        Z: 1.34628
+        X: -0.138797
+        Y: 0.0797127
+        Z: 1.21989
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.104796
+      Pitch: 0.234796
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
       Yaw: 3.1581
