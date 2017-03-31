@@ -5,11 +5,12 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /TF1
+        - /TF1/Frames1
         - /Wrench_ROI1/Shape1
-        - /LaserScan1
         - /Image1
       Splitter Ratio: 0.5
-    Tree Height: 1032
+    Tree Height: 526
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -18,7 +19,7 @@ Panels:
       - /2D Nav Goal1
       - /Publish Point1
     Name: Tool Properties
-    Splitter Ratio: 0.588679
+    Splitter Ratio: 0.588679016
   - Class: rviz/Views
     Expanded:
       - /Current View1
@@ -38,7 +39,7 @@ Visualization Manager:
       Color: 160; 160; 164
       Enabled: true
       Line Style:
-        Line Width: 0.03
+        Line Width: 0.0299999993
         Value: Lines
       Name: Grid
       Normal Cell Count: 0
@@ -114,6 +115,30 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        r_sensor_fx_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_sensor_fy_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_sensor_fz_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_sensor_tx_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_sensor_ty_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        r_sensor_tz_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
         r_shoulder_link:
           Alpha: 1
           Show Axes: false
@@ -145,58 +170,66 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
+        ZED_center:
+          Value: false
         ZED_left_camera:
-          Value: true
+          Value: false
+        ZED_right_camera:
+          Value: false
         base_link:
           Value: true
         ground:
-          Value: true
+          Value: false
         laser:
-          Value: true
+          Value: false
         leg_base_link:
-          Value: true
+          Value: false
         leg_foreleg_ankle:
-          Value: true
+          Value: false
         leg_foreleg_link:
-          Value: true
+          Value: false
         leg_hindleg_ankle:
-          Value: true
+          Value: false
         leg_thigh_link:
-          Value: true
+          Value: false
         map:
-          Value: true
+          Value: false
         r_dgripper_link:
-          Value: true
+          Value: false
         r_elbow_link:
-          Value: true
+          Value: false
         r_sensor_fx_link:
-          Value: true
+          Value: false
         r_sensor_fy_link:
-          Value: true
+          Value: false
         r_sensor_fz_link:
-          Value: true
+          Value: false
         r_sensor_tx_link:
-          Value: true
+          Value: false
         r_sensor_ty_link:
-          Value: true
+          Value: false
         r_sensor_tz_link:
-          Value: true
+          Value: false
         r_shoulder_link:
-          Value: true
+          Value: false
         r_upperarm_link:
-          Value: true
+          Value: false
         r_wrist_p_link:
-          Value: true
+          Value: false
         r_wrist_y_link:
-          Value: true
+          Value: false
         rarm_end_coords:
           Value: true
         rarm_ft_sensor_frame:
+          Value: false
+        valve:
+          Value: true
+        valve2:
           Value: true
         zed_current_frame:
-          Value: true
+          Value: false
         zed_initial_frame:
-          Value: true
+          Value: false
       Marker Scale: 0.5
       Name: TF
       Show Arrows: true
@@ -206,7 +239,13 @@ Visualization Manager:
         base_link:
           leg_base_link:
             leg_thigh_link:
-              {}
+              leg_foreleg_link:
+                leg_foreleg_ankle:
+                  leg_hindleg_ankle:
+                    ground:
+                      {}
+                    laser:
+                      {}
           r_shoulder_link:
             r_upperarm_link:
               r_elbow_link:
@@ -224,16 +263,18 @@ Visualization Manager:
                         {}
                     rarm_ft_sensor_frame:
                       {}
+            valve:
+              {}
             zed_current_frame:
               ZED_left_camera:
+                ZED_center:
+                  {}
+                ZED_right_camera:
+                  {}
+              zed_initial_frame:
                 {}
-        leg_foreleg_link:
-          leg_foreleg_ankle:
-            leg_hindleg_ankle:
-              ground:
-                {}
-              laser:
-                {}
+          valve2:
+            {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -267,14 +308,14 @@ Visualization Manager:
       Update Interval: 0
       Value: true
       Visual Enabled: true
-    - Angle Tolerance: 0.1
+    - Angle Tolerance: 0.100000001
       Class: rviz/Odometry
       Color: 255; 25; 0
       Enabled: false
       Keep: 1000
       Length: 1
       Name: ZED_odom
-      Position Tolerance: 0.1
+      Position Tolerance: 0.100000001
       Topic: /zed/odom
       Value: false
     - Alpha: 1
@@ -300,7 +341,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: false
       Size (Pixels): 3
-      Size (m): 0.005
+      Size (m): 0.00499999989
       Style: Flat Squares
       Topic: /zed/point_cloud/cloud_registered/resize_1_2/points
       Unreliable: false
@@ -313,19 +354,19 @@ Visualization Manager:
       Topic: /extract_panel_cluster/output
       Unreliable: false
       Value: false
-      alpha: 0.8
+      alpha: 0.800000012
       color: 255; 0; 0
       coloring: Flat color
-      line width: 0.005
+      line width: 0.00499999989
       only edge: false
       show coords: false
     - Class: jsk_rviz_plugin/BoundingBox
-      Enabled: true
+      Enabled: false
       Name: panel_search_area
       Topic: /non_ground_box_publisher/output
       Unreliable: false
-      Value: true
-      alpha: 0.8
+      Value: false
+      alpha: 0.800000012
       color: 25; 255; 0
       coloring: Flat color
       line width: 1
@@ -343,7 +384,7 @@ Visualization Manager:
       Color: 255; 0; 0
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 4096
@@ -354,28 +395,28 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.01
+      Size (m): 0.00999999978
       Style: Flat Squares
       Topic: /non_ground_point_indices_decomposer/debug_output
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Class: jsk_rviz_plugin/BoundingBox
       Enabled: true
       Name: panel_processing_area
       Topic: /panel_box_publisher/output
       Unreliable: false
       Value: true
-      alpha: 0.8
+      alpha: 0.800000012
       color: 25; 255; 0
       coloring: Flat color
-      line width: 0.005
+      line width: 0.00499999989
       only edge: true
       show coords: false
-    - Arrow Length: 0.3
-      Axes Length: 0.1
-      Axes Radius: 0.01
+    - Arrow Length: 0.300000012
+      Axes Length: 0.100000001
+      Axes Radius: 0.00999999978
       Class: jsk_rviz_plugin/PoseArray
       Color: 255; 25; 0
       Enabled: true
@@ -393,12 +434,12 @@ Visualization Manager:
       Unreliable: false
       Value: true
       coloring: Auto
-      normal length: 0.1
+      normal length: 0.100000001
       only border: true
       show normal: true
-    - Arrow Length: 0.3
-      Axes Length: 0.1
-      Axes Radius: 0.01
+    - Arrow Length: 0.300000012
+      Axes Length: 0.100000001
+      Axes Radius: 0.00999999978
       Class: jsk_rviz_plugin/PoseArray
       Color: 255; 25; 0
       Enabled: true
@@ -407,9 +448,9 @@ Visualization Manager:
       Topic: /wrench_3d_projector/pose_top
       Unreliable: false
       Value: true
-    - Arrow Length: 0.3
-      Axes Length: 0.1
-      Axes Radius: 0.01
+    - Arrow Length: 0.300000012
+      Axes Length: 0.100000001
+      Axes Radius: 0.00999999978
       Class: jsk_rviz_plugin/PoseArray
       Color: 255; 25; 0
       Enabled: true
@@ -419,16 +460,16 @@ Visualization Manager:
       Unreliable: false
       Value: true
     - Alpha: 1
-      Axes Length: 0.3
-      Axes Radius: 0.05
+      Axes Length: 0.300000012
+      Axes Radius: 0.0500000007
       Class: rviz/Pose
       Color: 255; 25; 0
       Enabled: true
-      Head Length: 0.3
-      Head Radius: 0.1
+      Head Length: 0.300000012
+      Head Radius: 0.100000001
       Name: Pose
       Shaft Length: 1
-      Shaft Radius: 0.05
+      Shaft Radius: 0.0500000007
       Shape: Axes
       Topic: /panel_3d_projector/output
       Unreliable: false
@@ -468,7 +509,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.03
+      Size (m): 0.0299999993
       Style: Flat Squares
       Topic: /scan
       Unreliable: false
@@ -476,8 +517,8 @@ Visualization Manager:
       Use rainbow: true
       Value: true
     - Class: rviz/Image
-      Enabled: true
-      Image Topic: /handeye/image_color
+      Enabled: false
+      Image Topic: /handeye/image_raw
       Max Value: 1
       Median window: 5
       Min Value: 0
@@ -486,7 +527,7 @@ Visualization Manager:
       Queue Size: 2
       Transport Hint: raw
       Unreliable: false
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -511,34 +552,36 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.73278
+      Distance: 1.74895298
       Enable Stereo Rendering:
-        Stereo Eye Separation: 0.06
+        Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.505155
-        Y: -0.000821478
-        Z: 1.34628
+        X: 0.10985478
+        Y: -0.482329339
+        Z: 1.13538218
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.0500000007
       Name: Current View
-      Near Clip Distance: 0.01
-      Pitch: 1.3698
+      Near Clip Distance: 0.00999999978
+      Pitch: 0.404797167
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.0881
+      Yaw: 2.28310585
     Saved: ~
 Window Geometry:
   Displays:
-    collapsed: false
+    collapsed: true
   Handeye:
     collapsed: false
-  Height: 2136
-  Hide Left Dock: false
+  Height: 1056
+  Hide Left Dock: true
   Hide Right Dock: false
   Image:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000023000000449fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000002800000449000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f000004fefc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a005600690065007700730000000028000004fe000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e1000001970000000300000ebf000003c3fc0100000007fb00000006005a004500440100000000000006910000004f00fffffffb0000000a0049006d00610067006501000006970000047b0000005c00fffffffb0000000a0049006d00610067006501000003010000022b0000000000000000fb0000000e00480061006e00640065007900650100000b18000001dd0000006e00fffffffb0000001800640065007400650063007400200069006d0061006700650100000cfb000001c40000008b00fffffffb0000000800540069006d00650000000449000002f6000002f600fffffffb0000000800540069006d0065010000000000000450000000000000000000000c890000044900000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000002300000024ffc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c00610079007300000000280000024f000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f000004fefc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a005600690065007700730000000028000004fe000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073f00000185fc0100000007fb00000006005a004500440100000000000003b10000004e00fffffffb0000000a0049006d00610067006500000003b6000002850000005c00fffffffb0000000a0049006d00610067006501000003010000022b0000000000000000fb0000000e00480061006e006400650079006501000003b7000001ca0000006f00fffffffb0000001800640065007400650063007400200069006d0061006700650100000587000001b80000008c00fffffffb0000000800540069006d00650000000449000002f60000030000fffffffb0000000800540069006d006501000000000000045000000000000000000000073f0000024f00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -547,7 +590,7 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: false
-  Width: 3775
+  Width: 1855
   X: 65
   Y: 24
   ZED:
