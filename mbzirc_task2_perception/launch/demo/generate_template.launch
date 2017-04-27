@@ -1,0 +1,65 @@
+<launch>
+  <arg name="run_meanshift" default="true" />
+  <arg name="image_topic" default="/camera/image_color" />
+  <arg name="info_topic" default="/camera/info" />
+  <arg name="visualize" default="true" />
+  <arg name="save_dir" default="~/" />
+  <arg name="is_achromatic" default="false" />
+
+  <!-- get roi -->
+  <node pkg="image_view2" type="image_view2" name="camera">
+    <remap from="image" to="$(arg image_topic)"/>
+  </node>
+  <node pkg="mbzirc_task2_perception" type="image_manual_clipper" name="image_clipper">
+    <remap from="~input" to="$(arg image_topic)"/>
+    <remap from="~input/rect" to="$(arg image_topic)/screenrectangle"/>
+    <remap from="~input/info" to="$(arg info_topic)"/>
+  </node>
+
+  <!-- pre-processing -->
+  <node pkg="mbzirc_task2_perception" type="luminance_homogenizer" name="luminance_homogenizer" respawn="true">
+    <remap from="~input" to="/image_clipper/output" />
+  </node>
+
+  <node  pkg="mbzirc_task2_perception" type="insigma_normalizer" name="insigma_normalizer" output="screen" respawn="true">
+    <remap from="~input" to="/luminance_homogenizer/output_v" if="$(arg is_achromatic)"/>
+    <remap from="~input" to="/luminance_homogenizer/output" unless="$(arg is_achromatic)"/>
+    <rosparam>
+      section_size : 3.0
+      screen_debug : false
+    </rosparam>
+  </node>
+  <node  pkg="mbzirc_task2_perception" type="meanshift_filtering" name="meanshift_filtering" output="screen" if="$(arg run_meanshift)" respawn="true">
+    <remap from="~input" to="/insigma_normalizer/output"/>
+    <rosparam>
+      meanshift_sp1: 20.0
+      meanshift_sr1: 20.0
+      meanshift_sp2: 20.0
+      meanshift_sr2: 20.0
+      clustering_thre: 1000
+      clustering_mini_thre: 400
+      screen_debug : false
+    </rosparam>
+  </node>
+
+  <!-- template matching -->
+  <node pkg="image_view" type="image_saver" name="image_saver" output="screen">
+    <remap from="image" to="/meanshift_filtering/output" if="$(arg run_meanshift)"/>
+    <remap from="image" to="/insigma_normalizer/output" unless="$(arg run_meanshift)"/>
+    <rosparam subst_value="true">
+      filename_format: "$(arg save_dir)template%02i.png"
+      encoding: mono8
+      save_all_image: false
+    </rosparam>
+  </node>
+
+  <!-- visualization -->
+  <node pkg="image_view" type="image_view" name="clipped_image" if="$(arg visualize)">
+    <remap from="image" to="/image_clipper/output"/>
+  </node>
+  <node pkg="image_view" type="image_view" name="detection_result" if="$(arg visualize)">
+    <remap from="image" to="/meanshift_filtering/output" if="$(arg run_meanshift)"/>
+    <remap from="image" to="/insigma_normalizer/output" unless="$(arg run_meanshift)"/>
+  </node>
+
+</launch>
