@@ -1,0 +1,65 @@
+<launch>
+  <arg name="use_zed" default="true" />
+  <!-- <arg name="frame_id" default="ground" /> -->
+  <arg name="frame_id" default="ground" />
+  <arg name="publish_tf" default="true" />
+
+  <arg name="camera_name" value="zed" if="$(arg use_zed)" />
+  <arg name="camera_name" value="multisense" unless="$(arg use_zed)" />
+  <!-- <arg name="input_cloud" default="/$(arg camera_name)/point_cloud/cloud_registered" if="$(arg use_zed)" /> -->
+  <arg name="input_cloud" default="/$(arg camera_name)/point_cloud/cloud_registered/resize_1_4/points" if="$(arg use_zed)" />
+  <arg name="input_cloud" default="/$(arg camera_name)/organized_image_points2_color" unless="$(arg use_zed)" />
+
+  <node pkg="mbzirc_task2_perception" type="bounding_box_publisher" name="non_ground_box_publisher" respawn="true">
+    <remap from="/bounding_box_publisher/output" to="/non_ground_box_publisher/output" />
+    <remap from="frame_id" to="/non_ground_box_publisher/frame_id" />
+    <remap from="pos_x" to="/non_ground_box_publisher/pos_x" />
+    <remap from="pos_y" to="/non_ground_box_publisher/pos_y" />
+    <remap from="pos_z" to="/non_ground_box_publisher/pos_z" />
+    <remap from="dim_x" to="/non_ground_box_publisher/dim_x" />
+    <remap from="dim_y" to="/non_ground_box_publisher/dim_y" />
+    <remap from="dim_z" to="/non_ground_box_publisher/dim_z" />
+    <param name="frame_id" value="$(arg frame_id)" />
+    <rosparam>
+      pos_x: 0.0 <!-- def: 10 -->
+      pos_y: 0.0
+      pos_z: 1.3
+      dim_x: 10.0 <!-- def: 20 -->
+      dim_y: 20.0 <!-- def: 20 -->
+      dim_z: 0.8
+    </rosparam>
+  </node>
+
+  <node pkg="jsk_pcl_ros" type="attention_clipper" name="non_ground_attention_clipper" respawn="true">
+    <remap from="~input" to="/$(arg camera_name)/depth/camera_info" />
+    <remap from="~input/points" to="$(arg input_cloud)" />
+    <remap from="~input/box" to="/non_ground_box_publisher/output" />
+  </node>
+
+    <!-- <remap from="~input" to="/$(arg camera_name)/point_cloud/cloud_registered" if="$(arg use_zed)" /> -->
+    <!-- <remap from="~input" to="/$(arg camera_name)/organized_image_points2_color" unless="$(arg use_zed)" /> -->
+  <node pkg="jsk_pcl_ros" type="cluster_point_indices_decomposer" name="non_ground_point_indices_decomposer" respawn="true">
+    <remap from="~input" to="$(arg input_cloud)" />
+    <remap from="~target" to="/non_ground_attention_clipper/output/cluster_point_indices" />
+  </node>
+
+  <node pkg="jsk_pcl_ros" type="euclidean_clustering" name="non_ground_euclidean_clustering" respawn="true">
+    <remap from="~input" to="/non_ground_point_indices_decomposer/debug_output" />
+    <rosparam>
+      tolerance : 0.15 <!-- for resize_1_4 : 0.15, resize_1_2 : 0.05 -->
+      label_tracking_tolerance : 0.4
+      max_size: 1000000
+      min_size: 50
+    </rosparam>
+  </node>
+
+  <node pkg="jsk_pcl_ros" type="cluster_point_indices_decomposer" name="panel_candidate_point_indices_decomposer" respawn="true">
+    <remap from="~input" to="/non_ground_point_indices_decomposer/debug_output" />
+    <remap from="~target" to="/non_ground_euclidean_clustering/output" />
+  </node>
+
+  <node pkg="mbzirc_task2_perception" type="extract_panel_cluster" name="extract_panel_cluster" respawn="true">
+    <remap from="~input" to="/panel_candidate_point_indices_decomposer/boxes" />
+  </node>
+
+</launch>

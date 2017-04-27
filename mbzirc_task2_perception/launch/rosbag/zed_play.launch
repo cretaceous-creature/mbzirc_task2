@@ -1,0 +1,38 @@
+<launch>
+  <arg name="INPUT" />
+  <arg name="play_rosbag" default="true" />
+  <arg name="namespace"  default="zed" />
+  <arg name="use_resize" default="true" />
+  <arg name="run_viewer" default="false" />
+
+  <node if="$(arg play_rosbag)" pkg="rosbag" type="play" args="$(arg INPUT)" name="rosbag" />
+  <group>
+    <group ns="$(arg namespace)">
+      <node pkg="nodelet" type="nodelet" name="stereo_manager"
+            args="manager" />
+      <node pkg="nodelet" type="nodelet" name="point_cloud_xyzrgb"
+            args="load depth_image_proc/point_cloud_xyzrgb stereo_manager">
+        <remap from="rgb/camera_info" to="/$(arg namespace)/left/camera_info" />
+        <remap from="rgb/image_rect_color" to="left/image_rect_color" />
+        <remap from="depth_registered/image_rect" to="depth/depth_registered" />
+        <remap from="depth_registered/points" to="point_cloud/cloud_registered" />
+        <rosparam>
+          queue_size: 100
+        </rosparam>
+      </node>
+    </group>
+    <include file="$(find jsk_pcl_ros)/launch/multi_resolution_organized_pointcloud.launch" if="$(arg use_resize)">
+      <arg name="NAMESPACE" value="$(arg namespace)/point_cloud/cloud_registered" />
+      <arg name="INPUT" value="/$(arg namespace)/point_cloud/cloud_registered" />
+      <arg name="INPUT_DEPTH" value="/$(arg namespace)/depth/depth_registered" />
+    </include>
+  </group>
+
+
+  <!-- viewer -->
+  <group ns="viewer" if="$(arg run_viewer)">
+    <node pkg="image_view" type="image_view" name="color_image_viewer_$(arg namespace)">
+      <remap from="image" to="/$(arg namespace)/left/image_rect_color" />
+    </node>
+  </group>
+</launch>

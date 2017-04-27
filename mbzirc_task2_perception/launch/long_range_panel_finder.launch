@@ -1,0 +1,9 @@
+<launch>
+  <include file="$(find uav_vehicle_detector)/launch/panel_detector.launch">
+    <arg name="headless" value="false"/>
+  </include>
+  <node pkg="mbzirc_task2_perception" type="panel_3d_projector" name="panel_3d_projector" respawn="true" output="screen">
+    <remap from="~input/rect" to="/detector/output/rectangle"/>
+    <remap from="~input/info" to="/zed/left/camera_info"/>
+  </node>
+</launch>

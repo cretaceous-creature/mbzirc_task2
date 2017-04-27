@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package>
+  <name>mbzirc_task2_control</name>
+  <version>0.0.0</version>
+  <description>The mbzirc_task2_control package</description>
+
+  <maintainer email="mizmizo@jsk.t.u-tokyo.ac.jp">mizmizo</maintainer>
+
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>roseus</build_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>roseus</run_depend>
+
+  <export>
+  </export>
+</package>

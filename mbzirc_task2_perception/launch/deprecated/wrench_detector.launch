@@ -1,0 +1,30 @@
+<launch>
+  <arg name="template" default="$(find mbzirc_task2_perception)/template/achromatic/wrench_template.png" />
+  <arg name="use_zed" default="true" />
+  <arg name="camera_name" value="zed" if="$(arg use_zed)" />
+  <arg name="camera_name" value="multisense" unless="$(arg use_zed)" />
+
+  <node pkg="mbzirc_task2_perception" type="wrench_template_detector" name="wrench_detector" output="screen" respawn="true">
+    <!-- <remap from="~input" to="/meanshift_filtering_panel/output"/> -->
+    <!-- <remap from="~input" to="/luminance_homogenizer_panel/output_v"/> -->
+    <remap from="~input" to="/meanshift_filtering_panel/output"/>
+    <remap from="~input/info" to="/image_clipper_panel/output_info"/>
+    <rosparam subst_value="true">
+      template_name : "$(arg template)"
+      target_num : 6
+      specify_target : true
+      min_scale: 0.4
+      max_scale: 1.4
+      resize_num: 20
+      matching_thre: 0.7
+      screen_debug : false
+      flip_template : true
+    </rosparam>
+  </node>
+  <node pkg="mbzirc_task2_perception" type="wrench_3d_projector" name="wrench_3d_projector" output="screen" respawn="true">
+    <remap from="~input/pose" to="/panel_roi_generator/wrench_pose"/>
+    <remap from="~input/point" to="/wrench_detector/position"/>
+    <remap from="~input/info" to="/$(arg camera_name)/left/camera_info"/>
+  </node>
+
+</launch>

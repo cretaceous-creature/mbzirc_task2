@@ -1,0 +1,65 @@
+<launch>
+  <arg name="use_zed" default="true" />
+  <arg name="frame_id" default="ground" />
+  <arg name="publish_tf" default="true" />
+  <arg name="visualize_roi" default="false" />
+
+  <arg name="camera_name" value="zed" if="$(arg use_zed)" />
+  <arg name="camera_name" value="multisense" unless="$(arg use_zed)" />
+  <!-- <arg name="input_cloud" default="/$(arg camera_name)/point_cloud/cloud_registered" if="$(arg use_zed)" /> -->
+  <arg name="input_cloud" default="/$(arg camera_name)/point_cloud/cloud_registered/resize_1_4/points" if="$(arg use_zed)" />
+  <arg name="input_cloud" default="/$(arg camera_name)/organized_image_points2_color" unless="$(arg use_zed)" />
+
+  <!-- get roi -->
+  <node pkg="mbzirc_task2_perception" type="bounding_box_publisher" name="panel_box_publisher" respawn="true">
+    <remap from="/bounding_box_publisher/output" to="/panel_box_publisher/output" />
+    <remap from="frame_id" to="/panel_box_publisher/frame_id" />
+    <param name="frame_id" value="$(arg frame_id)" />
+    <rosparam>
+      pos_x: 0.0
+      pos_y: 0.0
+      pos_z: 1.3
+      dim_x: 16.0
+      dim_y: 16.0
+      dim_z: 1.0
+    </rosparam>
+  </node>
+
+  <node pkg="jsk_pcl_ros" type="attention_clipper" name="panel_attention_clipper" respawn="true">
+    <remap from="~input" to="/$(arg camera_name)/depth/camera_info" />
+    <remap from="~input/points" to="/$(arg input_cloud)" />
+    <remap from="~input/box" to="/panel_box_publisher/output" />
+  </node>
+
+  <node pkg="jsk_pcl_ros" type="extract_indices" name="panel_point_indices_decomposer" respawn="true">
+    <remap from="~input" to="/$(arg input_cloud)" />
+    <remap from="~indices" to="/panel_attention_clipper/output/point_indices" />
+    <param name="keep_organized" value="true" />
+  </node>
+
+  <include file="$(find jsk_pcl_ros)/launch/organized_multi_plane_segmentation.launch">
+    <arg name="INPUT" value="/panel_point_indices_decomposer/output" />
+    <arg name="PUBLISH_BOX_TF" value="false"/>
+  </include>
+  <param name="/multi_plane_estimate/min_size" value="250"/>
+  <param name="/multi_plane_estimate/distance_threshold" value="1.0"/>
+  <param name="/multi_plane_estimate/angular_threshold" value="0.1"/>
+  <param name="/multi_plane_estimate/max_curvature" value="5.0"/>
+  <param name="/multi_plane_estimate/connect_plane_angle_threshold" value="3.14"/>
+  <param name="/multi_plane_estimate/connect_distance_threshold" value="0.7"/>
+  <param name="/multi_plane_estimate/estimation_method" value="0"/>
+  <param name="/multi_plane_estimate/ransac_refine_outlier_distance_threshold" value="0.2"/>
+
+  <node pkg="mbzirc_task2_perception" type="roi_generator" name="panel_roi_generator" respawn="true" output="screen">
+    <remap from="~input" to="/multi_plane_estimate/output_refined_polygon" />
+    <remap from="~input/info" to="/$(arg camera_name)/left/camera_info" />
+  </node>
+
+  <node pkg="mbzirc_task2_perception" type="image_clipper" name="image_clipper_panel" respawn="true">
+    <remap from="~input" to="/$(arg camera_name)/left/image_rect_color" />
+    <remap from="~input/rect" to="/panel_roi_generator/output_roi" />
+  </node>
+  <node pkg="image_view" type="image_view" name="image_view_panel" if="$(arg visualize_roi)">
+    <remap from="image" to="/image_clipper_panel/output" />
+  </node>
+</launch>

@@ -1,0 +1,34 @@
+<launch>
+  <arg name="headless" default="true" />
+  <arg name="rate" default="3" />
+  <arg name="type" default="mono" />
+
+<group ns= "handeye">
+ <node name="netusbcam" pkg="netusbcam" type="netusbtest_node" output="log" respawn="true">
+   <param name="fps" value="15" />
+   <remap from = "/net_usb_cam/image_raw" to ="/handeye/image_color" />
+   <remap from = "/net_usb_cam/camera_info" to ="/handeye/camera_info" />
+ </node>
+
+ <!--  <node type="nodelet" pkg="nodelet" name="camera_nodelet_manager" args="manager" output="screen"  respawn="true"/> -->
+ <!--  <node pkg="nodelet" type="nodelet" name="image_proc_debayer" -->
+ <!--        args="load image_proc/debayer camera_nodelet_manager" output="screen"  respawn="true"> -->
+ <!--   </node> -->
+
+ <!--  <node pkg="nodelet" type="nodelet" name="image_throttle" -->
+ <!--        args="load netusbcam/image_throttle camera_nodelet_manager" output="log"  respawn="true"> -->
+ <!--      <remap from="/handeye/topic_in"  to="/handeye/image_$(arg type)"/> -->
+ <!--      <remap from="/handeye/topic_out" to="/handeye/image_$(arg type)_throttle"/> -->
+ <!--      <param name="update_rate" value="$(arg rate)" /> -->
+ <!-- </node> -->
+
+</group>
+  <node name="image_view" pkg="image_view" type="image_view" respawn="false" output="screen" unless="$(arg headless)">
+    <remap from="image" to="/net_usb_cam/image_color"/>
+    <param name="autosize" value="true" />
+  </node>
+</launch>
+
+
+
+

@@ -1,0 +1,7 @@
+<library path="lib/libimage_throttle">
+  <class name="netusbcam/image_throttle" type="NodeletThrottleImage" base_class_type="nodelet::Nodelet">
+    <description>
+      Nodelet for image throttle
+    </description>
+  </class>
+</library>

@@ -1,0 +1,25 @@
+<launch>
+  <arg name="machine" default="localhost" />
+  <machine name="localhost" address="localhost" />
+  <arg name="save_zed" default="true" />
+
+  <arg name="save_dir" default="/tmp/zed_rosbag"/> <!-- destination directory of bagfile -->
+  <arg name="bagfile_prefix" default="data" /> <!-- prefix of bagfile name (filename is prefix_date.bag) -->
+  <param name="mk_save_dir" command="mkdir -p $(arg save_dir)" />
+
+  <arg unless="$(arg save_zed)"
+       name="zed_topics" value="" />
+  <arg if="$(arg save_zed)"
+       name="zed_topics" value="/zed/left/image_rect_color /zed/left/camera_info
+                                /zed/depth/depth_registered /zed/depth/camera_info
+                                /zed/odom" />
+
+  <!-- execute -->
+
+  <node name="default_rosbag_record" pkg="rosbag" type="record"
+        machine="$(arg machine)"
+        args="-e $(arg zed_topics)
+              -o $(arg save_dir)/$(arg bagfile_prefix)
+              "/>
+</launch>
+

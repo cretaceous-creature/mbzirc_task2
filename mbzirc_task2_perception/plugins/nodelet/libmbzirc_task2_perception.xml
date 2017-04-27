@@ -1,0 +1,46 @@
+<library path="lib/libmbzirc_task2_perception">
+  <class name="mbzirc_task2_perception/LuminanceHomogenizer"
+         type="mbzirc_task2_perception::LuminanceHomogenizer"
+         base_class_type="nodelet::Nodelet">
+  </class>
+  <class name="mbzirc_task2_perception/MeanshiftFiltering"
+         type="mbzirc_task2_perception::MeanshiftFiltering"
+         base_class_type="nodelet::Nodelet">
+  </class>
+  <class name="mbzirc_task2_perception/ROIGenerator"
+         type="mbzirc_task2_perception::ROIGenerator"
+         base_class_type="nodelet::Nodelet">
+  </class>
+  <class name="mbzirc_task2_perception/BoundingBoxPublisher"
+         type="mbzirc_task2_perception::BoundingBoxPublisher"
+         base_class_type="nodelet::Nodelet">
+  </class>
+  <class name="mbzirc_task2_perception/ExtractPanelCluster"
+         type="mbzirc_task2_perception::ExtractPanelCluster"
+         base_class_type="nodelet::Nodelet">
+  </class>
+  <class name="mbzirc_task2_perception/ImageClipper"
+         type="mbzirc_task2_perception::ImageClipper"
+         base_class_type="nodelet::Nodelet">
+  </class>
+  <class name="mbzirc_task2_perception/ImageManualClipper"
+         type="mbzirc_task2_perception::ImageManualClipper"
+         base_class_type="nodelet::Nodelet">
+  </class>
+  <class name="mbzirc_task2_perception/InsigmaNormalizer"
+         type="mbzirc_task2_perception::InsigmaNormalizer"
+         base_class_type="nodelet::Nodelet">
+  </class>
+  <class name="mbzirc_task2_perception/Panel3DProjector"
+         type="mbzirc_task2_perception::Panel3DProjector"
+         base_class_type="nodelet::Nodelet">
+  </class>
+  <class name="mbzirc_task2_perception/TemplateMatchDetector"
+         type="mbzirc_task2_perception::TemplateMatchDetector"
+         base_class_type="nodelet::Nodelet">
+  </class>
+  <class name="mbzirc_task2_perception/Wrench3DProjector"
+         type="mbzirc_task2_perception::Wrench3DProjector"
+         base_class_type="nodelet::Nodelet">
+  </class>
+</library>

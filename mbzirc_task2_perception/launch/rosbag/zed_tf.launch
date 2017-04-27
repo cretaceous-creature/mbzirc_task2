@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="tf2_ros" type="static_transform_publisher" name="zed_tf_publisher"
+        args="-0.26 -0.205 0.25 0 0 0.03 /r_shoulder_link /zed_current_frame" />
+
+</launch>

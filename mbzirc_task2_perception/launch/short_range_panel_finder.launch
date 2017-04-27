@@ -1,0 +1,56 @@
+<launch>
+  <arg name="template" default="$(find mbzirc_task2_perception)/template/achromatic/panel_template.png" />
+  <arg name="use_zed" default="true" />
+  <arg name="frame_id" default="r_shoulder_link" />
+  <arg name="publish_tf" default="true" />
+  <arg name="visualize_roi" default="false" />
+  <arg name="run_meanshift" default="true" />
+
+  <arg name="camera_name" value="zed" if="$(arg use_zed)" />
+  <arg name="camera_name" value="multisense" unless="$(arg use_zed)" />
+  <!-- <arg name="input_cloud" default="/$(arg camera_name)/point_cloud/cloud_registered" if="$(arg use_zed)" /> -->
+  <arg name="input_cloud" default="/$(arg camera_name)/point_cloud/cloud_registered/resize_1_4/points" if="$(arg use_zed)" />
+  <arg name="input_cloud" default="/$(arg camera_name)/organized_image_points2_color" unless="$(arg use_zed)" />
+
+  <!-- pre-processing -->
+  <node pkg="mbzirc_task2_perception" type="luminance_homogenizer" name="short_range_luminance_homogenizer" respawn="true">
+    <remap from="~input" to="/$(arg camera_name)/left/image_rect_color" />
+  </node>
+
+  <node  pkg="mbzirc_task2_perception" type="insigma_normalizer" name="short_range_insigma_normalizer" output="screen" respawn="true">
+    <remap from="~input" to="/short_range_luminance_homogenizer/output_v"/>
+    <rosparam>
+      screen_debug : false
+    </rosparam>
+  </node>
+
+  <node  pkg="mbzirc_task2_perception" type="meanshift_filtering" name="short_range_meanshift_filtering" output="screen" if="$(arg run_meanshift)" respawn="true">
+    <remap from="~input" to="/short_range_insigma_normalizer/output"/>
+    <rosparam>
+      meanshift_sp1: 20.0
+      meanshift_sr1: 20.0
+      meanshift_sp2: 20.0
+      meanshift_sr2: 20.0
+      clustering_thre: 1000
+      clustering_mini_thre: 400
+      screen_debug : false
+    </rosparam>
+  </node>
+
+  <node pkg="mbzirc_task2_perception" type="template_match_detector" name="short_range_panel_detector" output="screen" respawn="true">
+    <remap from="~input" to="/short_range_meanshift_filtering/output" if="$(arg run_meanshift)"/>
+    <remap from="~input" to="/short_range_insigma_normalizer/output" unless="$(arg run_meanshift)"/>
+    <remap from="~input/info" to="/$(arg camera_name)/left/camera_info"/>
+    <rosparam subst_value="true">
+      template_name : "$(arg template)"
+      specify_target : false
+      min_scale: 0.5
+      max_scale: 1.4
+      resize_num: 10
+      matching_thre: 0.4
+      screen_debug : true
+      flip_template : false
+    </rosparam>
+  </node>
+
+</launch>

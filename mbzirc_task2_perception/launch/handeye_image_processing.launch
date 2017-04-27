@@ -1,0 +1,76 @@
+<launch>
+  <arg name="visualize_roi" default="false" />
+  <arg name="camera_name" default="handeye" />
+  <!-- <arg name="template" default="$(find mbzirc_task2_perception)/template/chromatic/wrench_meanshift_large.png" /> -->
+  <arg name="template" default="$(find mbzirc_task2_perception)/template/achromatic/wrench_template_top_half.png" />
+  <arg name="run_meanshift" default="true" />
+
+  <!-- get roi -->
+  <node pkg="manip_test" type="static_roi_publisher" name="static_roi_publisher_handeye" respawn="true">
+    <remap from="input" to="/$(arg camera_name)/camera_info" />
+    <remap from="/static_roi_publisher/output" to="/static_roi_publisher_handeye/output" />
+    <remap from="x_offset" to="/static_roi_publisher_handeye/x_offset" />
+    <remap from="y_offset" to="/static_roi_publisher_handeye/y_offset" />
+    <remap from="width" to="/static_roi_publisher_handeye/width" />
+    <remap from="height" to="/static_roi_publisher_handeye/height" />
+    <rosparam>
+      <!-- x_offset: 188 -->
+      <!-- y_offset: 0 -->
+      <!-- width: 376 -->
+      <!-- height: 440 -->
+      x_offset: 288
+      y_offset: 160
+      width: 210
+      height: 200
+    </rosparam>
+  </node>
+
+  <node pkg="mbzirc_task2_perception" type="image_clipper" name="image_clipper_handeye" respawn="true">
+    <remap from="~input" to="/$(arg camera_name)/image_color" />
+    <remap from="~input/rect" to="/static_roi_publisher_handeye/output" />
+  </node>
+  <node pkg="image_view" type="image_view" name="image_view_handeye" if="$(arg visualize_roi)">
+    <remap from="image" to="/image_clipper_handeye/output" />
+  </node>
+
+  <!-- pre-processing -->
+  <node pkg="mbzirc_task2_perception" type="luminance_homogenizer" name="luminance_homogenizer_handeye">
+    <remap from="~input" to="/image_clipper_handeye/output"/>
+  </node>
+
+  <node  pkg="mbzirc_task2_perception" type="insigma_normalizer" name="insigma_normalizer_handeye" output="screen" respawn="true">
+    <remap from="~input" to="/luminance_homogenizer_handeye/output_v"/>
+    <rosparam>
+      screen_debug : false
+    </rosparam>
+  </node>
+
+  <node  pkg="mbzirc_task2_perception" type="meanshift_filtering" name="meanshift_filtering_handeye" if="$(arg run_meanshift)" respawn="true">
+    <remap from="~input" to="/insigma_normalizer_handeye/output"/>
+    <rosparam>
+      meashift_sp1: 40.0
+      meashift_sr1: 40.0
+      meashift_sp2: 40.0
+      meashift_sr2: 40.0
+      clustering_thre: 1000
+      clustering_mini_thre: 100
+    </rosparam>
+  </node>
+
+  <node pkg="mbzirc_task2_perception" type="template_match_detector" name="wrench_detector_handeye" output="screen" respawn="true">
+    <remap from="~input" to="/meanshift_filtering_handeye/output" if="$(arg run_meanshift)"/>
+    <remap from="~input" to="/insigma_normalizer_handeye/output" unless="$(arg run_meanshift)"/>
+    <remap from="~input/info" to="/image_clipper_handeye/output_info"/>
+    <rosparam subst_value="true">
+      template_name : "$(arg template)"
+      specify_target : false
+      min_scale: 0.8
+      max_scale: 1.5
+      resize_num: 14
+      matching_thre: 0.5
+      screen_debug : false
+      flip_template : false
+    </rosparam>
+  </node>
+
+</launch>
