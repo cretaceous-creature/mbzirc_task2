@@ -396,3 +396,15 @@
       (pick :use-ri t :time time))
     ))
 
+(defun rot-hand-onetime
+  (&key (use-ri nil) (arm :rarm) (use-torso nil) (move-time 2000)
+        (move-ang 10) (rot-axis :y))
+    (let (*ik_target* (stable-point-offset (float-vector 20 0 -60)))
+        (setq *ik_target* (send (send (send *robot* arm :end-coords) :copy-worldcoords)
+                                :traslate stable-point-offset))
+        (send *ik_target* :rotate (deg2rad move-ang) rot-axis)
+        (send *ik_target* :translate (v- stable-point-offset))
+        (ik-planning *ik_target* :arm arm :rotation-axis t :use-torso use-torso)
+        (when use-ri
+          (send *ri* :angle-vector (send *robot* :angle-vector) move-time))
+        ))
