@@ -7,11 +7,12 @@
 (setq robot-name nil)
 
 ;; robot should be hrp2g or aero-arm-single-wrist. any other function should be runned after is function.
-(defun start-task (&key (robot "aero-arm-single-wrist"))
+(defun start-task (&key (robot "aero-arm-single-wrist") (node-name "mbzirc-control"))
   (unless   (or (equal robot "hrp2g")
                 (equal robot "aero-arm-single-wrist"))
     (format t "invalid robot name!~%")
     (return-from start-picking nil))
+  (ros::roseus node-name)
   (if (equal robot "hrp2g")
       (progn ;; for hrp2g
         (load "package://hrp2v_dynamixel_controller/euslisp/gripper_controller.l")
