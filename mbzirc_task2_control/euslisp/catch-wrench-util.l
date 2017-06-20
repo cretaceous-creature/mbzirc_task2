@@ -257,7 +257,7 @@
       )))
 
 (defun fitting-to-wrench-front (&key (arm :rarm) (rotation-axis t) (timeout 150) (use-ri nil)
-                                     (use-torso t) (auto nil) (target-pos #f(390 285)) (target-accuracy 7) (time 1000)
+                                     (use-torso t) (auto nil) (target-pos #f(390 295)) (target-accuracy 7) (time 1000)
                                      (max-try 10) (bottom? nil))
   (let (offset-vec (cntr 0) error_vec (try-cntr 0))
     ;;get wrench position

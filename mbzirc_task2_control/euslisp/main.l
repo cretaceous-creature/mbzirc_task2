@@ -16,7 +16,7 @@
 (setq startPanelY -2.0) ;; how far the panel is in the y direction from the start point, in meters.
 
 ;; search front of panel param
-(setq rot-dir 1) ;;1 to left, -1 to right turn
+(setq rot-dir -1) ;;1 to left, -1 to right turn
 
 (setq wrench_target 3) ;; 3 for 19mm, 4 for 22mm
 (setq main-use-ri t)
@@ -44,8 +44,9 @@
     (print msg)
     )
 
-(setq currentState "goToInitPosition")
+;; (setq currentState "goToInitPosition")
 ;; (setq currentState "pickWrench")
+(setq currentState "farRange")
 ;; (setq currentState "midRange")
 ;; (setq currentState "alignBaseWithShaft")
 ;;(setq currentState "laserFarRange")
@@ -59,6 +60,7 @@
          ((equal currentState "goToInitPosition") (go-to-init-position-state))
          ((equal currentState "laserFarRange") (laser-far-range-state))
          ((equal currentState "runArena") (run-arena-state))
+         ((equal currentState "farRange") (far-range-state))
          ((equal currentState "midRange") (mid-range-state))
          ((equal currentState "shortRange") (short-range-state))
          ((equal currentState "aligning") (aligning-state))
@@ -123,13 +125,28 @@
     (debugPrint "exiting laser-far-range-state")
     )
 
+;;;;;;;;;;;;;  Far Range State ;;;;;;;;;;;;;
+(defun far-range-state ()
+    
+    (debugPrint "entered far-range-state")
+    ;;;; Execute the state ;;;;
+    (setq far-range-state-result (long-approach :use-ri main-use-ri :auto main-auto ))
+    
+    ;;;; Goto next state based on te execution result of this state
+    (cond
+     (far-range-state-result (setq currentState "midRange"))
+     ((not far-range-state-result) (setq currentState "runArena")))
+     )
+    (debugPrint "exiting far-range-state")
+    )
 
-;;;;;;;;;;;;;  Short Range State ;;;;;;;;;;;;;
+;;;;;;;;;;;;;  Middle Range State ;;;;;;;;;;;;;
 (defun mid-range-state ()
     
     (debugPrint "entered mid-range-state")
     ;;;; Execute the state ;;;;
-    (setq mid-range-state-result (middle-approach-look-right :use-ri main-use-ri :auto main-auto ))
+    ;; (setq mid-range-state-result (middle-approach-look-right :use-ri main-use-ri :auto main-auto ))
+        (setq mid-range-state-result (middle-approach :use-ri main-use-ri :auto main-auto ))
     
     ;;;; Goto next state based on te execution result of this state
     (cond
@@ -193,7 +210,7 @@
     
     (debugPrint "entered align-base-with-shaft-state")
     ;;;; Execute the state ;;;;
-    (setq align-base-with-shaft-state-result (align-with-panel :target-offset #f(-530 450 0)
+    (setq align-base-with-shaft-state-result (align-with-panel :target-offset #f(-530 460 0)
                                                                :target-rot 0.05 :use-ri main-use-ri :auto main-auto))
     ;;(setq align-base-with-state-result (laser-align-with-panel (- 800 dim) 505))
     
@@ -204,8 +221,7 @@
     
     ;;;; Goto next state based on te execution result of this state
     (cond
-     (align-base-with-shaft-state-result (progn
-                                             (resettask2pose)
+     (align-base-with-shaft-state-result (progn (unix::sleep 2)
                                              (setq currentState "alignWrenchWithShaft")))
      ((not align-base-with-shaft-state-result) (setq currentState "alignBaseWithShaft"))
      )
@@ -217,6 +233,7 @@
     
     (debugPrint "entered align-wrench-with-shaft-state")
     ;;;; Execute the state ;;;;
+    (unix::sleep 3)
     (setq align-wrench-with-shaft-state-result (align-wrench-with-shaft))
     
     ;;;; Goto next state based on te execution result of this state

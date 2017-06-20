@@ -84,7 +84,7 @@
 (defun fit-translation (&key (target-offset #f(-650 200 0)) ;; target-offset is offset from panel in local coordinates of panel
                              ;; (auto nil) (use-ri t) (use-feedback t) (keep-dir t) (world nil)
                              (auto nil) (use-ri t) (use-feedback t) (world nil)
-                             (timeout 100) (update-time t) (pos_tolerance 50) (max_loop 6))
+                             (timeout 100) (update-time t) (pos_tolerance 20) (max_loop 6))
   (let (error-pos (loop_cntr 0) target_x target_theta cntr)
     (while (> max_loop loop_cntr)
       (incf loop_cntr)

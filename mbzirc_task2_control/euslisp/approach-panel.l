@@ -72,20 +72,21 @@
     (end-approach)
     (return-from rough-align res)))
 
-(defun go-to-front-of-panel (&key (auto nil) (use-ri t) (offset-length 1200) (rot-dir 1) (div-num 8))
-    (let (check-res (loop_cntr 0) (try-num 2))
+(defun go-to-front-of-panel (&key (auto nil) (use-ri t) (offset-length 1200) (rot-dir 1) (div-num 8) (turn nil))
+    (let (check-res (loop_cntr 0) try-num)
+      (if turn
+              (setq try-num 6)
+          (setq try-num div-num))
       (start-go-to-front)
       (tagbody start-state
              (incf loop_cntr)
-             (when (> loop_cntr (* 3 try-num))
+             (when (> loop_cntr try-num)
                      (format t "check from all position, but could not find front.~%")
                      (end-approach)
                      (return-from go-to-front-of-panel nil))
-             (when (equal loop_cntr (+ try-num 1))
+             (when (and (equal loop_cntr 3) turn)
                  (setq rot-dir (- rot-dir)))
              (format t "next: check-front~%")
-             ;; (unless auto
-             ;;   (read-line))
              (setq check-res (check-front))
              (format t "done: check-front~%")
              (if check-res

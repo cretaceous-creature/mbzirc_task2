@@ -168,8 +168,8 @@
         (format t "detect-shaft-center-result ~a. start-arm-pose-delta now ~a~%" detect-shaft-center-result start-arm-pose-delta)
 
         ;; here's the state!
-        (scan-for-contact-state start-arm-pose-delta)
-        (if (not scan-for-contact-state)
+        (setq scan-for-contact-state-result (scan-for-contact-state start-arm-pose-delta))
+        (if (not scan-for-contact-state-result)
                 (return-from fit-wrench-to-shaft nil))
         (setq detect-shaft-center-result (detect-shaft-center-state))
         (unless detect-shaft-center-result
@@ -821,13 +821,23 @@
        (progn
          (print "Found shaft tf.")
          (setq hand-to-shaft-coords (send *tfl* :lookup-transform "/rarm_end_coords" "valve" (instance ros::time :init)))
+         (setq shaft-to-hand-coords (send *tfl* :lookup-transform "valve" "/rarm_end_coords" (instance ros::time :init)))
+         (setq base-link-to-shaft-coords (send *tfl* :lookup-transform "base_link" "valve" (instance ros::time :init)))
          (format t "hand-to-shaft-coords ~a~%" hand-to-shaft-coords)
+         (format t "base-link-to-shaft-coords ~a~%" base-link-to-shaft-coords)
+         (send *ri* :move-waist #f(150 0 -50) :world 7000)
 ;         (setq hand-to-shaft-coords (send *tfl* :lookup-transform "/rarm_end_coords" "cluster_decomposer_finaloutput00" time_now))
 ;         (setq hand-to-shaft-coords (send *tfl* :lookup-transform "/rarm_end_coords" "dummy_shaft" (instance ros::time :init)))
          (setq shaft-world-coords (send (send *robot* :rarm :end-coords :copy-worldcoords) :translate (send hand-to-shaft-coords :pos)))
-         (send shaft-world-coords :rotate (send (send *robot* :rarm :end-coords :copy-worldcoords) :rot))  ;; use hand orientation
-         (setq arm-above-shaft-pos (send (send shaft-world-coords :copy-coords) :translate (float-vector 0 0 (+ wrenchLength 20))))
+         (send base-link-to-shaft-coords :translate #f(-300 0 -200) :world)
+         (send base-link-to-shaft-coords :translate #f(-54 0 20) :world) ;; account for offset in recognition
+         ;; (send shaft-world-coords :rotate (send (send *robot* :rarm :end-coords :copy-worldcoords) :rot))  ;; use hand orientation
 
+         ;; (setq arm-above-shaft-pos (send (send shaft-world-coords :copy-coords) :translate (float-vector 0 0 (+ wrenchLength 20))))
+         (setq arm-above-shaft-pos (send (send base-link-to-shaft-coords :copy-coords) :translate (float-vector 0 0 (+ wrenchLength 40))))
+
+         (send arm-above-shaft-pos :replace-rot #2f((0 1 0) (-1 0 0) (0 0 1)))
+         (format t "arm-above-shaft-pos ~a~%" arm-above-shaft-pos)
          (unless (send *robot* arm :inverse-kinematics arm-above-shaft-pos)
              (return-from align-wrench-with-shaft))
 
@@ -835,7 +845,8 @@
          (if (boundp `*irtviewer*)
              (send *irtviewer* :draw-objects))
          (moverobot)
-         (send *ri* :wait-interpolation)
+         (unix::sleep 7) ;; added
+         ;;(send *ri* :wait-interpolation)
          )
       (progn ;; else if shaft tf not found 
         (print "No shaft detected. Wait for shaft tf failed."))
