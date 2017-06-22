@@ -140,10 +140,6 @@ include_directories(
 add_executable(netusbtest_node src/netusbtest.cpp)
 target_link_libraries(netusbtest_node  NETUSBCAM udev ${catkin_LIBRARIES}  ${Boost_LIBRARIES} )
 
-####### Iamge Throttle
-add_library(image_throttle src/image_throttle.cpp)
-target_link_libraries(image_throttle ${catkin_LIBRARIES})
-
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above

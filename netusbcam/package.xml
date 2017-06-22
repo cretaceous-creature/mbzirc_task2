@@ -57,6 +57,5 @@
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
-    <nodelet plugin="${prefix}/image_throttle_nodelets.xml"/>
   </export>
 </package>
