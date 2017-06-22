@@ -14,12 +14,13 @@
                                     /aero/ft
                                     /aero_joint_states
                                     /joint_states
-                                    /tf_static" />
+                                    /tf_static
+                                    /scan" />
 
   <arg name="cmd_vel_msgs" value="/cmd_vel" if="$(arg save_cmd_vel)" />
   <arg name="cmd_vel_msgs" value="" unless="$(arg save_cmd_vel)" />
 
-  <arg name="net_usb_cam_msgs" value="/handeye/camera_info /handeye/image_color"
+  <arg name="net_usb_cam_msgs" value="/handeye/camera_info /handeye/image_color /handeye/image_raw"
        if="$(arg save_net_usb_cam)" />
   <arg name="net_usb_cam_msgs" value="" unless="$(arg save_net_usb_cam)" />
 

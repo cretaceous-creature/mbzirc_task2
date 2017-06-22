@@ -65,8 +65,8 @@ if [ -z $FLG_COM ]; then
     fi
 fi
 
-#byobu-tmux new-window -n long-range
-#byobu-tmux send-keys -t long-range "roslaunch mbzirc_task2_perception long_range_panel_finder.launch" C-m
+byobu-tmux new-window -n long-range
+byobu-tmux send-keys -t long-range "roslaunch mbzirc_task2_perception long_range_panel_finder.launch" C-m
 byobu-tmux new-window -n middle-range
 byobu-tmux send-keys -t middle-range "roslaunch mbzirc_task2_perception middle_range_panel_finder.launch" C-m
 byobu-tmux new-window -n short-range
