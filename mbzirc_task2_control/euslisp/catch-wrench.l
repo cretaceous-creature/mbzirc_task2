@@ -3,7 +3,7 @@
 (load "package://mbzirc_task2_control/euslisp/catch-wrench-util.l")
 
 (defun full-pick (tar &key (arm :rarm) (auto nil) (ready? nil) (use-feedback? t)
-                      (use-torso t) (hand-offset #f(20 -7 -25)) (bottom? nil) (feedback-target #f(385 266)))
+                      (use-torso t) (hand-offset #f(20 -25 0)) (bottom? nil) (feedback-target #f(385 266)))
   (start-picking)
   (set-target tar)
   (send reference-time :now)

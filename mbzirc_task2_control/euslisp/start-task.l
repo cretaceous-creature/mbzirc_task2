@@ -28,14 +28,14 @@
       (load "package://aero_utils/euslisp/aero-arm-single-wrist-utils.l")
       (aero-init)
       (load-controllers)
+      (setq reference-frame "base_link")
+      (setq reference-link :base_link_lk)
+      (setq robot-name robot)
       (load "package://aero_utils/euslisp/aero-servo-controller.l")
       (load "package://aero_dgripper/euslisp/aero-dgripper-controller.l")
       (setq *real* t)
       (setq *robot* *aero*)
       (send *ri* :go-pos 0 0 0) ;; to lock wheels
-      (setq reference-frame "base_link")
-      (setq reference-link :base_link_lk)
-      (setq robot-name robot)
 
       ;;stop image proccessing
       (ros::set-param "/non_ground_box_publisher/run_flag" nil)

@@ -5,7 +5,7 @@
 (load "package://mbzirc_task2_control/euslisp/start-task.l")
 ;; (start-task)
 
-(defun align-with-panel (&key (target-offset #f(-650 200 0)) (target-rot 0.0) (auto nil) (use-ri t) (timeout 100) (update-time t))
+(defun align-with-panel (&key (target-offset #f(-600 200 0)) (target-rot 0.0) (auto nil) (use-ri t) (timeout 100) (update-time t))
   (start-aligning)
   (let (res)
       (format t "fit rotation~%")

@@ -31,7 +31,7 @@
         (setq msg-log msg)
         (setq *panel_pose* (send (send *panel_pose* :copy-worldcoords) :translate
                                (float-vector
-                                (- (/ (send (send msg :dimensions) :x) 2.0)) 0 0)))) ;; get front position
+                                (- (/ (* (send (send msg :dimensions) :x) 1000) 2.0)) 0 0)))) ;; get front position
   ))
 
 (defun panel-point-cb (msg)
