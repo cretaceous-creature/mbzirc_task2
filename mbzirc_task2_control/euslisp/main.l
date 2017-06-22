@@ -207,18 +207,12 @@
 
 ;;;;;;;;;;;;;  Align Base With Shaft State ;;;;;;;;;;;;;
 (defun align-base-with-shaft-state ()
-    
+
     (debugPrint "entered align-base-with-shaft-state")
     ;;;; Execute the state ;;;;
     (setq align-base-with-shaft-state-result (align-with-panel :target-offset #f(-530 460 0)
                                                                :target-rot 0.05 :use-ri main-use-ri :auto main-auto))
-    ;;(setq align-base-with-state-result (laser-align-with-panel (- 800 dim) 505))
-    
-    ;;no feedback
-    ;;(setq align-base-with-shaft-state-result t)
-    ;;(move-base-side -100 :use-ri main-use-ri)
-    ;;(move-base 305 0 :use-ri main-use-ri)
-    
+
     ;;;; Goto next state based on te execution result of this state
     (cond
      (align-base-with-shaft-state-result (progn (unix::sleep 2)
@@ -234,7 +228,8 @@
     (debugPrint "entered align-wrench-with-shaft-state")
     ;;;; Execute the state ;;;;
     (unix::sleep 3)
-    (setq align-wrench-with-shaft-state-result (align-wrench-with-shaft))
+    ;;(setq align-wrench-with-shaft-state-result (align-wrench-with-shaft))
+    (setq align-wrench-with-shaft-state-result (align-wrench-with-shaft-from-recog-pose))
     
     ;;;; Goto next state based on te execution result of this state
     (cond

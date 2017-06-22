@@ -44,6 +44,7 @@ namespace mbzirc_task2_perception
     ros::Subscriber polygon_sub_;
     ros::Subscriber info_sub_;
     ros::Publisher pub_;
+    ros::Publisher shaft_pub_;
     ros::Publisher debug_pub_;
     ros::Publisher wrench_pub_;
     tf::TransformListener tf_listener_;

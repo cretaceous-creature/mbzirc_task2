@@ -7,6 +7,7 @@ namespace mbzirc_task2_perception
   {
     DiagnosticNodelet::onInit();
     pub_ = advertise<sensor_msgs::CameraInfo>(*pnh_, "output_roi", 1);
+    shaft_pub_ = advertise<sensor_msgs::CameraInfo>(*pnh_, "output_shaft_roi", 1);
     debug_pub_ = advertise<geometry_msgs::PoseArray>(*pnh_, "debug_output", 1);
     wrench_pub_ = advertise<geometry_msgs::PoseArray>(*pnh_, "wrench_pose", 1);
     //target_frame = "ground";
