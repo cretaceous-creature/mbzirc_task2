@@ -10,7 +10,6 @@ namespace mbzirc_task2_perception
     shaft_pub_ = advertise<sensor_msgs::CameraInfo>(*pnh_, "output_shaft_roi", 1);
     debug_pub_ = advertise<geometry_msgs::PoseArray>(*pnh_, "debug_output", 1);
     wrench_pub_ = advertise<geometry_msgs::PoseArray>(*pnh_, "wrench_pose", 1);
-    //target_frame = "ground";
     target_frame = "r_shoulder_link";
   }
 
@@ -169,22 +168,27 @@ namespace mbzirc_task2_perception
       transformed_vertices.push_back(transformed_vertex);
     }
 
-    std::vector<cv::Point2d> local_points;
-    for (i = 0; i < transformed_vertices.size(); i++) {
-      //for z-optical axis
+    std::vector<cv::Point2d> local_points_wrench, local_points_shaft;
+    for (i = 0; i < 4; i++) {
       cv::Point3d p(transformed_vertices[i].pose.position.x,
                     transformed_vertices[i].pose.position.y,
                     transformed_vertices[i].pose.position.z);
 
-      //for x-optical axis
-      // cv::Point3d p(- transformed_vertices[i].pose.position.y,
-      //               - transformed_vertices[i].pose.position.z,
-      //               transformed_vertices[i].pose.position.x);
       cv::Point2d uv = model.project3dToPixel(p);
-      local_points.push_back(uv);
+      local_points_wrench.push_back(uv);
     }
-    sensor_msgs::CameraInfo roi_info = computeROI(msg, local_points);
-    pub_.publish(roi_info);
+    for (i = 4; i < transformed_vertices.size(); i++) {
+      cv::Point3d p(transformed_vertices[i].pose.position.x,
+                    transformed_vertices[i].pose.position.y,
+                    transformed_vertices[i].pose.position.z);
+
+      cv::Point2d uv = model.project3dToPixel(p);
+      local_points_shaft.push_back(uv);
+    }
+    sensor_msgs::CameraInfo roi_wrench_info = computeROI(msg, local_points_wrench);
+    sensor_msgs::CameraInfo roi_shaft_info = computeROI(msg, local_points_shaft);
+    pub_.publish(roi_wrench_info);
+    shaft_pub_.publish(roi_shaft_info);
   }
 
   void ROIGenerator::polygonCb(const jsk_recognition_msgs::PolygonArrayConstPtr& msg)
@@ -202,11 +206,11 @@ namespace mbzirc_task2_perception
     geometry_msgs::Pose corner;
     Eigen::Vector3f corner_pos;
     bool is_corner = false;
-    bool find_corner = false;
     double corner_thre1 = 0.2;
     double corner_thre2 = M_PI / 2.0 - 0.15;
     geometry_msgs::PoseStamped input_pose, transformed_pose;
 
+    // === find corners === //
     for(i = 0; i < edge.size(); i++){
       if(i > 0){
         angle = edge.at(i)->angle(*edge[i - 1]);
@@ -217,6 +221,7 @@ namespace mbzirc_task2_perception
       std::cout << "angle : " << angle << "  sum : " << angle_sum << std::endl;
 
       if(!is_corner){
+        // find begining of corner
         if(angle > corner_thre1){
           is_corner = true;
           corner_pos = edge[i]->getOrigin();
@@ -233,17 +238,17 @@ namespace mbzirc_task2_perception
         }
       }
 
+      // find end of corner
       if(angle_sum > corner_thre2){
-        find_corner = true;
         is_corner = false;
         corner_pos = edge[i]->getOrigin();
-          input_pose.header = msg->header;
-          input_pose.pose = eigen2pose(corner_pos);
-          try{
-            tf_listener_.transformPose(target_frame, input_pose, transformed_pose);
-          } catch(tf::TransformException ex){
-            return;
-          }
+        input_pose.header = msg->header;
+        input_pose.pose = eigen2pose(corner_pos);
+        try{
+          tf_listener_.transformPose(target_frame, input_pose, transformed_pose);
+        } catch(tf::TransformException ex){
+          return;
+        }
         corners.push_back(transformed_pose.pose);
         std::cout << "end corner   pos : " << transformed_pose.pose.position.x << " "
                   << transformed_pose.pose.position.y << " " << transformed_pose.pose.position.z << std::endl;
@@ -259,40 +264,43 @@ namespace mbzirc_task2_perception
       return;
     }
 
+    // === sort corners === //
     std::vector<geometry_msgs::Pose> sorted_corners;
     sorted_corners.resize(corners.size());
 
-    //find corners
-    std::vector<int> cand_id;
+    // find right corners
+    std::vector<int> cand_id; // expected to be endpoints of right edge5
     cand_id.resize(2);
-    double min_y1, min_y2;
+
+    double max_x1, max_x2;
     for(i = 0; i < corners.size(); i++){
-      double y = corners.at(i).position.y;
+      double x = corners.at(i).position.x;
       if(i == 0){
-        min_y1 = y;
+        max_x1 = x;
         cand_id.at(0) = i;
       } else if(i == 1){
-        if(y <= min_y1){
-          min_y2 = min_y1;
-          min_y1 = y;
+        if(x >= max_x1){
+          max_x2 = max_x1;
+          max_x1 = x;
           cand_id.at(1) = cand_id.at(0);
           cand_id.at(0) = i;
         } else {
-          min_y2 = y;
+          max_x2 = x;
           cand_id.at(1) = i;
         }
       } else {
-        if(y <= min_y1){
-          min_y2 = min_y1;
-          min_y1 = y;
+        if(x >= max_x1){
+          max_x2 = max_x1;
+          max_x1 = x;
           cand_id.at(1) = cand_id.at(0);
           cand_id.at(0) = i;
-        } else if(y <= min_y2){
-          min_y2 = y;
+        } else if(x >= max_x2){
+          max_x2 = x;
           cand_id.at(1) = i;
         }
       }
     }
+
 
     if(abs(cand_id.at(0) - cand_id.at(1)) != 1 &&
        abs(cand_id.at(0) - cand_id.at(1)) != corners.size() - 1){ //right-top corner candidates should adjoin.
@@ -303,7 +311,7 @@ namespace mbzirc_task2_perception
     if(cand_id.at(0) > cand_id.at(1))
       std::swap(cand_id.at(0), cand_id.at(1));
 
-    //estimate sides
+    // estimate sides
     // sort order :
     // right-bottom -> right(side)-top -> top-right -> top-left -> left-top -> left-bottom -> bottom-left -> bottom-right
     std::vector<int> rside_id;
@@ -323,8 +331,6 @@ namespace mbzirc_task2_perception
     }
 
     std::cout << "====================================" << std::endl;
-    //sleep(2);
-    //debug output
     std::cout << "sides    : " << std::endl;
     for(i = 0; i < sides.size(); i++){
       Eigen::Vector3f debug_origin, debug_direction;
@@ -336,9 +342,8 @@ namespace mbzirc_task2_perception
                 << debug_direction.y() << " " << debug_direction.z() << " " << std::endl;
     }
 
+    // === estimate vetices === //
     std::cout << "vertices : " << std::endl;
-
-    //estimate vetices
     std::vector<Eigen::Vector3f> vertices;
     Eigen::Vector3f commonperpend1, commonperpend2;
     Eigen::Vector3f vertex;
@@ -365,7 +370,7 @@ namespace mbzirc_task2_perception
     rot.col(2) = - sides.at(0)->getDirection().normalized();
     std::cout << "rot matrix:" << std::endl << rot << std::endl;
 
-    //not publish rotated coordinates
+    // not publish rotated coordinates
     Eigen::Vector3f rot_x;
     rot_x = rot.row(2).cross(Eigen::Vector3f::UnitZ());
     std::cout << "rotation around x : " << rot_x.x() << " " << rot_x.y() << " " << rot_x.z() << " norm : " << rot_x.norm() << std::endl;
@@ -378,24 +383,38 @@ namespace mbzirc_task2_perception
     }
 
     std::vector <Eigen::Vector3f> translation;
-    translation.resize(4);
+    translation.resize(8);
 
     //wrench roi parameters
-    translation.at(0).x() = 0.0;
-    translation.at(0).y() = -0.01; //0.02
-    translation.at(0).z() = - 0.18;
-    translation.at(1).x() = 0.0;
-    translation.at(1).y() = 0.36; //0.33
-    translation.at(1).z() = - 0.18;
-    translation.at(2).x() = 0.0;
-    translation.at(2).y() = 0.36; //0.02
-    translation.at(2).z() = - 0.49; //-0.42
-    translation.at(3).x() = 0.0;
-    translation.at(3).y() = - 0.01; //0.33
-    translation.at(3).z() = - 0.49; //-0.42
+    translation.at(0).x() = 0.01;
+    translation.at(0).y() = 0.18;
+    translation.at(0).z() = 0.0;
+    translation.at(1).x() = - 0.36;
+    translation.at(1).y() = 0.18;
+    translation.at(1).z() = 0.0;
+    translation.at(2).x() = - 0.36;
+    translation.at(2).y() = 0.49;
+    translation.at(2).z() = 0.0;
+    translation.at(3).x() = 0.01;
+    translation.at(3).y() = 0.49;
+    translation.at(3).z() = 0.0;
+
+    //valve roi parameters
+    translation.at(4).x() = - 0.45;
+    translation.at(4).y() = 0.17;
+    translation.at(4).z() = 0.0;
+    translation.at(5).x() = - 0.85;
+    translation.at(5).y() = 0.17;
+    translation.at(5).z() = 0.0;
+    translation.at(6).x() = - 0.85;
+    translation.at(6).y() = 0.57;
+    translation.at(6).z() = 0.0;
+    translation.at(7).x() = - 0.45;
+    translation.at(7).y() = 0.57;
+    translation.at(7).z() = 0.0;
 
     std::vector <Eigen::Vector3f> roi_vertices;
-    roi_vertices.resize(4);
+    roi_vertices.resize(8);
     for(i = 0; i < roi_vertices.size(); i++){
       Eigen::Vector3f roi_vertex = rot * translation.at(i) + vertices.at(0);
       roi_vertices.at(i) = roi_vertex;
@@ -416,30 +435,34 @@ namespace mbzirc_task2_perception
     vertices_pose.push_back(eigen2pose(roi_vertices.at(1), rot_q));
     vertices_pose.push_back(eigen2pose(roi_vertices.at(2), rot_q));
     vertices_pose.push_back(eigen2pose(roi_vertices.at(3), rot_q));
+    vertices_pose.push_back(eigen2pose(roi_vertices.at(4), rot_q));
+    vertices_pose.push_back(eigen2pose(roi_vertices.at(5), rot_q));
+    vertices_pose.push_back(eigen2pose(roi_vertices.at(6), rot_q));
+    vertices_pose.push_back(eigen2pose(roi_vertices.at(7), rot_q));
     pose_msg.poses = vertices_pose;
 
     //valve stem
-    Eigen::Vector3f valve_translation;
-    valve_translation.x() = -0.07;
-    valve_translation.y() = 0.65;
-    valve_translation.z() = -0.37;
+    // Eigen::Vector3f valve_translation;
+    // valve_translation.x() = -0.07;
+    // valve_translation.y() = 0.65;
+    // valve_translation.z() = -0.37;
 
-    Eigen::Vector3f valve_pos;
-    valve_pos = rot * valve_translation + vertices.at(0);
+    // Eigen::Vector3f valve_pos;
+    // valve_pos = rot * valve_translation + vertices.at(0);
 
-    geometry_msgs::Pose valve_pose;
-    valve_pose = eigen2pose(valve_pos, rot_q);
+    // geometry_msgs::Pose valve_pose;
+    // valve_pose = eigen2pose(valve_pos, rot_q);
 
-    tf::Transform valve_transform;
-    tf::Quaternion rot_tf(rot_q.x(), rot_q.y(), rot_q.z(), rot_q.w());
-    valve_transform.setOrigin(tf::Vector3(valve_pos.x(), valve_pos.y(), valve_pos.z()));
-    valve_transform.setRotation(rot_tf);
-    // br_.sendTransform(tf::StampedTransform(valve_transform, msg->header.stamp,
+    // tf::Transform valve_transform;
+    // tf::Quaternion rot_tf(rot_q.x(), rot_q.y(), rot_q.z(), rot_q.w());
+    // valve_transform.setOrigin(tf::Vector3(valve_pos.x(), valve_pos.y(), valve_pos.z()));
+    // valve_transform.setRotation(rot_tf);
+    // // br_.sendTransform(tf::StampedTransform(valve_transform, msg->header.stamp,
+    // //                                         target_frame,
+    // //                                         "valve"));
+    // br_.sendTransform(tf::StampedTransform(valve_transform, ros::Time::now(),
     //                                         target_frame,
     //                                         "valve"));
-    br_.sendTransform(tf::StampedTransform(valve_transform, ros::Time::now(),
-                                            target_frame,
-                                            "valve"));
 
     std::vector <Eigen::Vector3f> wrench_translation;
     wrench_translation.resize(6);
