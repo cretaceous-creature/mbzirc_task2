@@ -43,4 +43,9 @@
          type="mbzirc_task2_perception::Wrench3DProjector"
          base_class_type="nodelet::Nodelet">
   </class>
+
+  <class name="mbzirc_task2_perception/Valve3DProjector"
+         type="mbzirc_task2_perception::Valve3DProjector"
+         base_class_type="nodelet::Nodelet">
+  </class>
 </library>

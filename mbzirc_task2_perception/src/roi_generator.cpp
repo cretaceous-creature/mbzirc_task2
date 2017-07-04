@@ -423,7 +423,7 @@ namespace mbzirc_task2_perception
     Eigen::Quaternionf rot_q(rot);
     rot_q.normalize();
 
-    geometry_msgs::PoseArray pose_msg;
+    geometry_msgs::PoseArray pose_msg; //poses for debug, visualizing on rviz
     pose_msg.header = msg->header;
     pose_msg.header.frame_id = target_frame;
     vertices_pose.clear();

@@ -97,6 +97,7 @@ jsk_add_nodelet(src/insigma_normalizer.cpp "mbzirc_task2_perception/InsigmaNorma
 jsk_add_nodelet(src/panel_3d_projector.cpp "mbzirc_task2_perception/Panel3DProjector" "panel_3d_projector")
 jsk_add_nodelet(src/template_match_detector.cpp "mbzirc_task2_perception/TemplateMatchDetector" "template_match_detector")
 jsk_add_nodelet(src/wrench_3d_projector.cpp "mbzirc_task2_perception/Wrench3DProjector" "wrench_3d_projector")
+jsk_add_nodelet(src/valve_3d_projector.cpp "mbzirc_task2_perception/Valve3DProjector" "valve_3d_projector")
 
 add_library(${PROJECT_NAME} SHARED ${mbzirc_task2_perception_nodelet_sources}
 )
