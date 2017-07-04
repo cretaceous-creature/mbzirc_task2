@@ -90,8 +90,8 @@ namespace mbzirc_task2_perception
     message_filters::Subscriber<geometry_msgs::PoseArray> sub_pose_;
     message_filters::Subscriber<opencv_apps::Point2DArrayStamped> sub_point_;
     message_filters::Subscriber<sensor_msgs::CameraInfo> sub_info_;
-    ros::Publisher pub_;
     tf::TransformListener tf_listener_;
+    tf::TransformBroadcaster tf_br_;
     boost::shared_ptr<message_filters::Synchronizer<SyncPolicy> > sync_;
     boost::shared_ptr<message_filters::Synchronizer<ApproximateSyncPolicy> > async_;
 

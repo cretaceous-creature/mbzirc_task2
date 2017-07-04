@@ -48,7 +48,6 @@ namespace mbzirc_task2_perception
   {
     DiagnosticNodelet::onInit();
     pnh_->param("approximate_sync", approximate_sync_, true);
-    pub_ = advertise<geometry_msgs::PoseStamped>(*pnh_, "output", 1);
     onInitPostProcess();
   }
 
@@ -141,22 +140,33 @@ namespace mbzirc_task2_perception
 
     //estimate valve positions
     Eigen::Vector3f roi_orig, roi_dir1, roi_dir2;
-    roi_orig = roi_vertices.at(0);
-    roi_dir1 = roi_vertices.at(1) - roi_vertices.at(0);
-    roi_dir2 = roi_vertices.at(3) - roi_vertices.at(0);
+    roi_orig = roi_vertices.at(3).normalized();
+    roi_dir1 = (roi_vertices.at(2) - roi_vertices.at(3)).normalized();
+    roi_dir2 = (roi_vertices.at(0) - roi_vertices.at(3)).normalized();
 
 
     //roi plane is n.dot(x) = h for all x on plane, valve position is alpha * valve_dir
     Eigen::Vector3f n = roi_dir1.cross(roi_dir2);
     double h = n.dot(roi_orig);
     double alpha = h / n.dot(valve_dir);
+    Eigen::Vector3f valve_pos = alpha * valve_dir;
 
-    geometry_msgs::Pose valve_pose = Valve3DProjector::eigen2pose(alpha * valve_dir);
+    geometry_msgs::Pose valve_pose = Valve3DProjector::eigen2pose(valve_pos);
 
-    geometry_msgs::PoseStamped out_msg;
-    out_msg.header = point_msg->header;
-    out_msg.pose = valve_pose;
-    pub_.publish(out_msg);
+    Eigen::Matrix3f rot;
+    rot.col(0) = n.normalized();
+    rot.col(1) = roi_dir1;
+    rot.col(2) = roi_dir2;
+    Eigen::Quaternionf rot_q(rot);
+    rot_q.normalize();
+
+    tf::Transform valve_transform;
+    tf::Quaternion rot_tf(rot_q.x(), rot_q.y(), rot_q.z(), rot_q.w());
+    valve_transform.setOrigin(tf::Vector3(valve_pos.x(), valve_pos.y(), valve_pos.z()));
+    valve_transform.setRotation(rot_tf);
+    tf_br_.sendTransform(tf::StampedTransform(valve_transform, ros::Time::now(),
+                                            point_msg->header.frame_id,
+                                            "valve"));
   }
 
 }
