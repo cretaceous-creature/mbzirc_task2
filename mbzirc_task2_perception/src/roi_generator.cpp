@@ -272,30 +272,30 @@ namespace mbzirc_task2_perception
     std::vector<int> cand_id; // expected to be endpoints of right edge5
     cand_id.resize(2);
 
-    double max_x1, max_x2;
+    double min_y1, min_y2;
     for(i = 0; i < corners.size(); i++){
-      double x = corners.at(i).position.x;
+      double y = corners.at(i).position.y;
       if(i == 0){
-        max_x1 = x;
+        min_y1 = y;
         cand_id.at(0) = i;
       } else if(i == 1){
-        if(x >= max_x1){
-          max_x2 = max_x1;
-          max_x1 = x;
+        if(y <= min_y1){
+          min_y2 = min_y1;
+          min_y1 = y;
           cand_id.at(1) = cand_id.at(0);
           cand_id.at(0) = i;
         } else {
-          max_x2 = x;
+          min_y2 = y;
           cand_id.at(1) = i;
         }
       } else {
-        if(x >= max_x1){
-          max_x2 = max_x1;
-          max_x1 = x;
+        if(y <= min_y1){
+          min_y2 = min_y1;
+          min_y1 = y;
           cand_id.at(1) = cand_id.at(0);
           cand_id.at(0) = i;
-        } else if(x >= max_x2){
-          max_x2 = x;
+        } else if(y <= min_y2){
+          min_y2 = y;
           cand_id.at(1) = i;
         }
       }
@@ -363,11 +363,13 @@ namespace mbzirc_task2_perception
     }
 
 
+    Eigen::Vector3f new_y = (sides.at(1)->getDirection().dot(Eigen::Vector3f(0, 1, 0)) > 0) ? sides.at(1)->getDirection() : - sides.at(1)->getDirection();
+    Eigen::Vector3f new_z = (sides.at(0)->getDirection().dot(Eigen::Vector3f(0, 0, 1)) > 0) ? sides.at(0)->getDirection() : - sides.at(0)->getDirection();
     Eigen::Vector3f new_x = sides.at(1)->getDirection().cross(sides.at(0)->getDirection());
     Eigen::Matrix3f rot;
     rot.col(0) = new_x.normalized();
-    rot.col(1) = - sides.at(1)->getDirection().normalized();
-    rot.col(2) = - sides.at(0)->getDirection().normalized();
+    rot.col(1) = new_y.normalized();
+    rot.col(2) = new_z.normalized();
     std::cout << "rot matrix:" << std::endl << rot << std::endl;
 
     // not publish rotated coordinates
@@ -386,32 +388,32 @@ namespace mbzirc_task2_perception
     translation.resize(8);
 
     //wrench roi parameters
-    translation.at(0).x() = 0.01;
-    translation.at(0).y() = 0.18;
-    translation.at(0).z() = 0.0;
-    translation.at(1).x() = - 0.36;
-    translation.at(1).y() = 0.18;
-    translation.at(1).z() = 0.0;
-    translation.at(2).x() = - 0.36;
-    translation.at(2).y() = 0.49;
-    translation.at(2).z() = 0.0;
-    translation.at(3).x() = 0.01;
-    translation.at(3).y() = 0.49;
-    translation.at(3).z() = 0.0;
+    translation.at(0).x() = 0.0;
+    translation.at(0).y() = - 0.01;
+    translation.at(0).z() = - 0.18;
+    translation.at(1).x() = 0.0;
+    translation.at(1).y() = 0.36;
+    translation.at(1).z() = - 0.18;
+    translation.at(2).x() = 0.0;
+    translation.at(2).y() = 0.36;
+    translation.at(2).z() = - 0.49;
+    translation.at(3).x() = 0.0;
+    translation.at(3).y() = - 0.01;
+    translation.at(3).z() = - 0.49;
 
     //valve roi parameters
-    translation.at(4).x() = - 0.45;
-    translation.at(4).y() = 0.17;
-    translation.at(4).z() = 0.0;
-    translation.at(5).x() = - 0.85;
-    translation.at(5).y() = 0.17;
-    translation.at(5).z() = 0.0;
-    translation.at(6).x() = - 0.85;
-    translation.at(6).y() = 0.57;
-    translation.at(6).z() = 0.0;
-    translation.at(7).x() = - 0.45;
-    translation.at(7).y() = 0.57;
-    translation.at(7).z() = 0.0;
+    translation.at(4).x() = -0.08;
+    translation.at(4).y() = 0.45;
+    translation.at(4).z() = - 0.17;
+    translation.at(5).x() = -0.08;
+    translation.at(5).y() = 0.85;
+    translation.at(5).z() = - 0.17;
+    translation.at(6).x() = -0.08;
+    translation.at(6).y() = 0.85;
+    translation.at(6).z() = - 0.57;
+    translation.at(7).x() = -0.08;
+    translation.at(7).y() = 0.45;
+    translation.at(7).z() = - 0.57;
 
     std::vector <Eigen::Vector3f> roi_vertices;
     roi_vertices.resize(8);
