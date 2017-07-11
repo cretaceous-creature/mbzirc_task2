@@ -35,12 +35,17 @@
           (send panel-corner :rotate (* 2 rot) :z)
           )))
 
+(defun pose-null-cb (msg)
+    )
+
 (defun start-aligning ()
   (ros::subscribe "/panel_roi_generator/debug_output" geometry_msgs::PoseArray #'pose-roi-cb)
+  (ros::subscribe "/valve_3d_projector/debug_output" geometry_msgs::PoseStamped #'pose-null-cb)
   (ros::set-param "/panel_box_publisher/run_flag" t))
 
 (defun end-aligning ()
   (ros::unsubscribe "/panel_roi_generator/debug_output")
+  (ros::unsubscribe "/valve_3d_projector/debug_output")
   (ros::set-param "/panel_box_publisher/run_flag" nil))
 
 (defun fit-rotation (&key (auto nil) (timeout 100) (update-time t) (use-ri nil) (use-feedback t)
