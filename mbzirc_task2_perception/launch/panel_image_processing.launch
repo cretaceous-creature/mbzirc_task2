@@ -12,6 +12,8 @@
   <arg name="input_cloud" default="/$(arg camera_name)/point_cloud/cloud_registered/resize_1_4/points" if="$(arg use_zed)" />
   <arg name="input_cloud" default="/$(arg camera_name)/organized_image_points2_color" unless="$(arg use_zed)" />
 
+
+  <!-- === WRENCH === -->
   <!-- pre-processing -->
   <node pkg="mbzirc_task2_perception" type="luminance_homogenizer" name="luminance_homogenizer_panel" respawn="true">
     <remap from="~input" to="/image_clipper_panel/output"/>
@@ -37,6 +39,7 @@
     </rosparam>
   </node>
 
+  <!-- wrench-detector -->
   <node pkg="mbzirc_task2_perception" type="template_match_detector" name="wrench_detector" output="screen" respawn="true">
     <remap from="~input" to="/meanshift_filtering_panel/output" if="$(arg run_meanshift)"/>
     <remap from="~input" to="/insigma_normalizer_panel/output" unless="$(arg run_meanshift)"/>
@@ -56,8 +59,7 @@
   <node pkg="mbzirc_task2_perception" type="wrench_3d_projector" name="wrench_3d_projector" output="screen" respawn="true">
     <remap from="~input/pose" to="/panel_roi_generator/wrench_pose"/>
     <remap from="~input/point" to="/wrench_detector/position"/>
-    <remap from="~input/info" to="/$(arg camera_name)/left/camera_info"/>
+    <remap from="~input/info" to="/$(arg camera_name)/right/camera_info"/>
   </node>
-
 
 </launch>

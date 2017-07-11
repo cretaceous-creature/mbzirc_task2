@@ -19,8 +19,8 @@
       pos_x: 0.0
       pos_y: 0.0
       pos_z: 1.3
-      dim_x: 16.0
-      dim_y: 16.0
+      dim_x: 3.5
+      dim_y: 3.5
       dim_z: 1.0
     </rosparam>
   </node>
@@ -52,14 +52,23 @@
 
   <node pkg="mbzirc_task2_perception" type="roi_generator" name="panel_roi_generator" respawn="true" output="screen">
     <remap from="~input" to="/multi_plane_estimate/output_refined_polygon" />
-    <remap from="~input/info" to="/$(arg camera_name)/left/camera_info" />
+    <remap from="~input/info" to="/$(arg camera_name)/right/camera_info" />
   </node>
 
   <node pkg="mbzirc_task2_perception" type="image_clipper" name="image_clipper_panel" respawn="true">
-    <remap from="~input" to="/$(arg camera_name)/left/image_rect_color" />
+    <remap from="~input" to="/$(arg camera_name)/right/image_rect_color" />
     <remap from="~input/rect" to="/panel_roi_generator/output_roi" />
   </node>
   <node pkg="image_view" type="image_view" name="image_view_panel" if="$(arg visualize_roi)">
     <remap from="image" to="/image_clipper_panel/output" />
   </node>
+
+  <node pkg="mbzirc_task2_perception" type="image_clipper" name="image_clipper_panel_shaft" respawn="true">
+    <remap from="~input" to="/$(arg camera_name)/right/image_rect_color" />
+    <remap from="~input/rect" to="/panel_roi_generator/output_shaft_roi" />
+  </node>
+  <node pkg="image_view" type="image_view" name="image_view_panel_shaft" if="$(arg visualize_roi)">
+    <remap from="image" to="/image_clipper_panel_shaft/output" />
+  </node>
+
 </launch>

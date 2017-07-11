@@ -21,11 +21,11 @@
     <remap from="dim_z" to="/non_ground_box_publisher/dim_z" />
     <param name="frame_id" value="$(arg frame_id)" />
     <rosparam>
-      pos_x: 0.0 <!-- def: 10 -->
+      pos_x: 10.0 <!-- def: 10 -->
       pos_y: 0.0
       pos_z: 1.3
-      dim_x: 10.0 <!-- def: 20 -->
-      dim_y: 20.0 <!-- def: 20 -->
+      dim_x: 20.0 <!-- def: 20 -->
+      dim_y: 15.0 <!-- def: 20 -->
       dim_z: 0.8
     </rosparam>
   </node>

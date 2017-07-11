@@ -75,6 +75,8 @@ byobu-tmux new-window -n get-roi
 byobu-tmux send-keys -t get-roi "roslaunch mbzirc_task2_perception get_roi_on_panel.launch" C-m
 byobu-tmux new-window -n panel-proc
 byobu-tmux send-keys -t panel-proc "roslaunch mbzirc_task2_perception panel_image_processing.launch" C-m
+byobu-tmux new-window -n shaft-proc
+byobu-tmux send-keys -t panel-proc "roslaunch mbzirc_task2_perception shaft_image_processing.launch" C-m
 byobu-tmux new-window -n handeye-proc
 byobu-tmux send-keys -t handeye-proc "roslaunch mbzirc_task2_perception handeye_image_processing.launch" C-m
 

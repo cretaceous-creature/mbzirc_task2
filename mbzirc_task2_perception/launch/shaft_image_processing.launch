@@ -1,0 +1,65 @@
+<launch>
+  <arg name="template" default="$(find mbzirc_task2_perception)/template/achromatic/valve_template2.png" />
+  <arg name="use_zed" default="true" />
+  <arg name="frame_id" default="r_shoulder_link" />
+  <arg name="publish_tf" default="true" />
+  <arg name="visualize_roi" default="false" />
+  <arg name="run_meanshift" default="true" />
+
+  <arg name="camera_name" value="zed" if="$(arg use_zed)" />
+  <arg name="camera_name" value="multisense" unless="$(arg use_zed)" />
+  <!-- <arg name="input_cloud" default="/$(arg camera_name)/point_cloud/cloud_registered" if="$(arg use_zed)" /> -->
+  <arg name="input_cloud" default="/$(arg camera_name)/point_cloud/cloud_registered/resize_1_4/points" if="$(arg use_zed)" />
+  <arg name="input_cloud" default="/$(arg camera_name)/organized_image_points2_color" unless="$(arg use_zed)" />
+
+
+  <!-- === VALVE === -->
+  <!-- pre-processing -->
+  <node pkg="mbzirc_task2_perception" type="luminance_homogenizer" name="luminance_homogenizer_panel_shaft" respawn="true">
+    <remap from="~input" to="/image_clipper_panel_shaft/output"/>
+  </node>
+
+  <node  pkg="mbzirc_task2_perception" type="insigma_normalizer" name="insigma_normalizer_panel_shaft" output="screen" respawn="true">
+    <remap from="~input" to="/luminance_homogenizer_panel_shaft/output_v"/>
+    <rosparam>
+      screen_debug : false
+    </rosparam>
+  </node>
+
+  <node  pkg="mbzirc_task2_perception" type="meanshift_filtering" name="meanshift_filtering_panel_shaft" output="screen" if="$(arg run_meanshift)" respawn="true">
+    <remap from="~input" to="/insigma_normalizer_panel_shaft/output"/>
+    <rosparam>
+      meanshift_sp1: 20.0
+      meanshift_sr1: 20.0
+      meanshift_sp2: 20.0
+      meanshift_sr2: 20.0
+      clustering_thre: 1000
+      clustering_mini_thre: 400
+      screen_debug : false
+    </rosparam>
+  </node>
+
+  <!-- valve-detector -->
+  <node pkg="mbzirc_task2_perception" type="template_match_detector" name="shaft_detector" output="screen" respawn="true">
+    <remap from="~input" to="/meanshift_filtering_panel_shaft/output" if="$(arg run_meanshift)"/>
+    <remap from="~input" to="/insigma_normalizer_panel_shaft/output" unless="$(arg run_meanshift)"/>
+    <remap from="~input/info" to="/image_clipper_panel_shaft/output_info"/>
+    <rosparam subst_value="true">
+      template_name : "$(arg template)"
+      target_num : 1
+      specify_target : true
+      min_scale: 0.8
+      max_scale: 1.4
+      resize_num: 10
+      matching_thre: 0.7
+      screen_debug : false
+      flip_template : false
+    </rosparam>
+  </node>
+  <node pkg="mbzirc_task2_perception" type="valve_3d_projector" name="valve_3d_projector" output="screen" respawn="true">
+    <remap from="~input/pose" to="/panel_roi_generator/debug_output"/>
+    <remap from="~input/point" to="/shaft_detector/position"/>
+    <remap from="~input/info" to="/$(arg camera_name)/right/camera_info"/>
+  </node>
+
+</launch>

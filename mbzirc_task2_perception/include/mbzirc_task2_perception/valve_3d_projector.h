@@ -80,7 +80,7 @@ namespace mbzirc_task2_perception
     virtual void onInit();
     virtual void subscribe();
     virtual void unsubscribe();
-    virtual geometry_msgs::Pose eigen2pose(Eigen::Vector3f vec);
+    virtual geometry_msgs::Pose eigen2pose(Eigen::Vector3f vec, Eigen::Quaternionf q);
     virtual Eigen::Vector3f pose2eigenVec(geometry_msgs::Pose pose);
     virtual void apply(const geometry_msgs::PoseArray::ConstPtr& pose_msg,
                        const opencv_apps::Point2DArrayStamped::ConstPtr& point_msg,
@@ -90,6 +90,7 @@ namespace mbzirc_task2_perception
     message_filters::Subscriber<geometry_msgs::PoseArray> sub_pose_;
     message_filters::Subscriber<opencv_apps::Point2DArrayStamped> sub_point_;
     message_filters::Subscriber<sensor_msgs::CameraInfo> sub_info_;
+    ros::Publisher pub_;
     tf::TransformListener tf_listener_;
     tf::TransformBroadcaster tf_br_;
     boost::shared_ptr<message_filters::Synchronizer<SyncPolicy> > sync_;

@@ -99,6 +99,7 @@ namespace mbzirc_task2_perception
     max_u = max_v = 0;
     for (size_t i = 0; i < points.size(); i++) {
       cv::Point2d uv(points[i]);
+      // point must be in image area
       if (uv.x < 0) {
         uv.x = 0;
       }
@@ -108,10 +109,10 @@ namespace mbzirc_task2_perception
       if (uv.x > msg->width) {
         uv.x = msg->width;
       }
-
       if (uv.y > msg->height) {
         uv.y = msg->height;
       }
+
       if (min_u > uv.x) {
         min_u = uv.x;
       }
@@ -170,17 +171,17 @@ namespace mbzirc_task2_perception
 
     std::vector<cv::Point2d> local_points_wrench, local_points_shaft;
     for (i = 0; i < 4; i++) {
-      cv::Point3d p(transformed_vertices[i].pose.position.x,
-                    transformed_vertices[i].pose.position.y,
-                    transformed_vertices[i].pose.position.z);
+      cv::Point3d p(- transformed_vertices[i].pose.position.y,
+                    - transformed_vertices[i].pose.position.z,
+                    transformed_vertices[i].pose.position.x);
 
       cv::Point2d uv = model.project3dToPixel(p);
       local_points_wrench.push_back(uv);
     }
     for (i = 4; i < transformed_vertices.size(); i++) {
-      cv::Point3d p(transformed_vertices[i].pose.position.x,
-                    transformed_vertices[i].pose.position.y,
-                    transformed_vertices[i].pose.position.z);
+      cv::Point3d p(- transformed_vertices[i].pose.position.y,
+                    - transformed_vertices[i].pose.position.z,
+                    transformed_vertices[i].pose.position.x);
 
       cv::Point2d uv = model.project3dToPixel(p);
       local_points_shaft.push_back(uv);
@@ -404,10 +405,10 @@ namespace mbzirc_task2_perception
     //valve roi parameters
     translation.at(4).x() = -0.08;
     translation.at(4).y() = 0.45;
-    translation.at(4).z() = - 0.17;
+    translation.at(4).z() = - 0.22;
     translation.at(5).x() = -0.08;
     translation.at(5).y() = 0.85;
-    translation.at(5).z() = - 0.17;
+    translation.at(5).z() = - 0.22;
     translation.at(6).x() = -0.08;
     translation.at(6).y() = 0.85;
     translation.at(6).z() = - 0.57;
