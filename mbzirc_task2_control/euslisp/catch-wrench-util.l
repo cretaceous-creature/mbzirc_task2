@@ -3,12 +3,15 @@
 (ros::load-ros-manifest "jsk_recognition_msgs")
 (ros::load-ros-manifest "jsk_pcl_ros")
 (ros::load-ros-manifest "opencv_apps")
+(ros::load-ros-manifest "jsk_laser")
 
 (setq *target_pose* nil)
 (setq *target_pose_orig* nil)
 (setq handeye_target nil)
 (setq pick-bottom nil)
 (setq target_num 0)
+(setq laser-reflectance nil)
+(setq laser-distance nil)
 (setq reference-time (ros::time-now))
 
 (defun pose-top-cb (msg)
@@ -53,6 +56,16 @@
             (return-from point-cb nil))
         (setq handeye_target (float-vector (send (car *handeye_target_array*) :x) (send (car *handeye_target_array*) :y))))
    )))
+
+(defun laser-cb (msg) ;; todo : deal with nil data
+  (let ((check-point-num 30) (cntr 0) start-point (reflectance-sum 0) (distance-sum 0))
+    (setq start-point (floor (- (/ (length (send msg :reflectance)) 2) (/ check-point-num 2))))
+    (while (< cntr check-point-num)
+      (setq reflectance-sum (+ reflectance-sum (elt (send msg :reflectance) (+ cntr start-point))))
+      (setq distance-sum (+ distance-sum (elt (send msg :distances) (+ cntr start-point))))
+      (incf cntr))
+    (setq laser-reflectance (/ reflectance-sum check-point-num))
+    ))
 
 (defun ik-planning (target &key (arm :rarm) (rotation-axis t) (use-torso t))
   (if (equal robot-name "hrp2g")
@@ -113,10 +126,11 @@
   (ros::subscribe "/wrench_3d_projector/pose_top" geometry_msgs::PoseArray #'pose-top-cb)
   (ros::subscribe "/wrench_3d_projector/pose_bottom" geometry_msgs::PoseArray #'pose-bottom-cb)
   (ros::subscribe "/wrench_detector_handeye/position" opencv_apps::Point2DArrayStamped #'point-cb)
+  (ros::subscribe "/laser_data" jsk_laser::JskLaser #'laser-cb)
   (ros::set-param "/panel_box_publisher/run_flag" t)
   (ros::set-param "/luminance_homogenizer_panel/run_flag" t)
   (ros::set-param "/image_clipper_handeye/run_flag" t)
-)
+  )
 
 (defun end-picking ()
   (ros::unsubscribe "/wrench_3d_projector/pose_top")
@@ -124,7 +138,8 @@
   (ros::unsubscribe "/wrench_detector_handeye/position")
   (ros::set-param "/panel_box_publisher/run_flag" nil)
   (ros::set-param "/luminance_homogenizer_panel/run_flag" nil)
-  (ros::set-param "/image_clipper_handeye/run_flag" nil))
+  (ros::set-param "/image_clipper_handeye/run_flag" nil)
+  )
 
 (defun set-target (tar)
   (setq target_num tar)
@@ -185,7 +200,6 @@
 
           ;;calulate ik, send motion
           (ik-planning *target_pose_pre_pre* :arm arm :rotation-axis nil :use-torso nil)
-          ;;(send *robot* arm :inverse-kinematics *target_pose_pre_pre* :rotation-axis nil :torso nil)
           (when (boundp '*irtviewer*)
               (objects (list *robot* *target_pose_pre_pre*)))
           (unless auto
@@ -228,7 +242,7 @@
         (send *robot* :reset-task2-pose)
         (setq *target_pose_pre* (ik-planning *target_pose_pre_pre* :arm arm :rotation-axis rotation-axis :use-torso use-torso))
         (send *target_pose_pre* :translate (v- pre-offset-vec))
-        
+
         (when (boundp '*irtviewer*)
           (objects (list *robot* *target_pose_pre_pre*)))
         (unless auto
@@ -276,7 +290,6 @@
     ;;fitting
     (while (and (> (norm error_vec) target-accuracy)
                 (< try-cntr max-try))
-      ;;(let ((dist-p-param-x 0.25) (dist-p-param-z 0.15) target_vec *ik-target*)
       (let ((dist-p-param-x 0.25) (dist-p-param-z 0.25) target_vec *ik-target*)
 
         ;;move arm once
@@ -336,17 +349,12 @@
                                                        (* (/ (elt *target_dist* 1) div) (+ i 1))
                                                        (* (/ (elt *target_dist* 2) div) (+ i 1)))))
         (ik-planning *next_target* :arm arm :rotation-axis t :use-torso use-torso)
-        ;; (if use-torso
-        ;;     (send *robot* arm :inverse-kinematics *next_target* :rotation-axis t :torso t :link-list
-        ;;           (send *robot* :link-list (send *robot* arm :end-coords :parent) (car (send *robot* :torso :links))))
-        ;;   (send *robot* arm :inverse-kinematics *next_target* :rotation-axis t :torso nil)
         (when (boundp '*irtviewer*)
           (objects (list *robot* *next_target*)))
         (unless auto
           (read-line))
         (when use-ri
             (send *ri* :angle-vector (send *robot* :angle-vector) time)
-            ;;(send *ri* :angle-vector (send *robot* :angle-vector) 1000)
             (unix::sleep (ceiling (/ time 1000))))
           ))))
 
@@ -396,3 +404,115 @@
       (pick :use-ri t :time time))
     ))
 
+(defun rot-hand-onetime
+  (&key (use-ri nil) (arm :rarm) (use-torso nil) (move-time 2000)
+        (move-ang 10) (rot-axis :y) (teleop nil))
+  (let (*ik_target* (stable-point-offset (float-vector -40 0 -50)))
+    (when teleop
+      (send *robot* :angle-vector (send *ri* :state :potentio-vector)))
+    (setq *ik_target* (send (send (send *robot* arm :end-coords) :copy-worldcoords)
+                            :translate stable-point-offset))
+    (send *ik_target* :rotate (deg2rad move-ang) rot-axis)
+    (send *ik_target* :translate (v- stable-point-offset))
+    (ik-planning *ik_target* :arm arm :rotation-axis t :use-torso use-torso)
+    (when use-ri
+      (send *ri* :angle-vector (send *robot* :angle-vector) move-time))
+    (when teleop ;;for teleop mode
+      (if (equal arm :larm)
+          (setq in_progress_target_larm_rot (send (send (send *robot* arm :end-coords) :copy-worldcoords) :rot))
+        (setq in_progress_target_rarm_rot (send (send (send *robot* arm :end-coords) :copy-worldcoords) :rot))
+        ))))
+
+(defun search-wrench-direction
+  (&key (use-ri nil) (arm :rarm) (start-ang 25) (end-ang -25) (div 40)
+        (each-move-time 400) (use-torso t) (teleop t) (debug nil))
+  (let ((rot-cnt 0) (cntr 0) (timeout 20) move-ang max-ref max-ref-index max-ref-pose)
+    ;; first motion
+    (send *robot* :angle-vector (send *ri* :state :potentio-vector))
+    (rot-hand-onetime :use-ri use-ri :arm arm :use-torso use-torso :move-ang start-ang :move-time (* each-move-time (/ div 2)))
+    (send *ri* :wait-interpolation)
+    (setq move-ang (- (/ (- start-ang end-ang) (float div))))
+    (when debug (format t "move ang: ~A~%" move-ang))
+
+    ;; first check
+    (setq laser-reflectance nil)
+    (ros::rate 10)
+    (while (null laser-reflectance)
+      (ros::spin-once)
+      (ros::sleep)
+      (if (> (incf cntr) timeout)
+          (progn (format t "something wrong, return from function~%")
+                 (return-from search-wrench-direction nil))))
+    (setq max-ref laser-reflectance)
+    (setq max-ref-index 0)
+    (setq max-ref-pose (send *robot* :angle-vector))
+    (when debug (format t "cnt : ~A  reflectance : ~A~%" rot-cnt laser-reflectance))
+
+    ;; search
+    (while (< rot-cnt div)
+      (incf rot-cnt)
+      (rot-hand-onetime :use-ri use-ri :arm arm :use-torso use-torso :move-ang move-ang :move-time each-move-time) ;; rotate hand
+      (setq laser-reflectance nil)
+      (ros::rate 10)
+      (setq cntr 0)
+      (while (null laser-reflectance)
+        (ros::spin-once)
+        (ros::sleep)
+        (if (> (incf cntr) timeout)
+            (progn (format t "something wrong, return from function~%")
+                   (return-from search-wrench-direction nil))))
+      (when debug (format t "cnt : ~A  reflectance : ~A" rot-cnt laser-reflectance))
+      (when (> laser-reflectance max-ref)
+        (when debug (format t " update max"))
+        (setq max-ref laser-reflectance)
+        (setq max-ref-index rot-cnt)
+        (setq max-ref-pose (send *robot* :angle-vector)))
+      (when debug (format t "~%"))
+      (unix::usleep (ceiling (* each-move-time 0.6 1000)))
+      ;;(send *ri* :wait-interpolation)
+      )
+
+    ;; align hand direction to wrench
+    (send *robot* :angle-vector max-ref-pose)
+    (when use-ri
+      (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+      (send *ri* :wait-interpolation))
+    (when teleop ;;for teleop mode
+      (if (equal arm :larm)
+          (setq in_progress_target_larm_rot (send (send (send *robot* arm :end-coords) :copy-worldcoords) :rot))
+        (setq in_progress_target_rarm_rot (send (send (send *robot* arm :end-coords) :copy-worldcoords) :rot))))
+    (return-from search-wrench-direction t)
+    ))
+
+(defun move-forward-with-laser
+  (&key (use-ri nil) (arm :rarm) (target-dist 50) ;;target-dist: distance b/w sensor and wrench
+        (each-move-time 400) (each-move-vec #f(10 0 0))
+        (dist-thre 5) (use-torso t) (teleop t) (debug nil))
+  (let (ik-target)
+    ;; first check
+    (setq laser-distance nil)
+    (ros::rate 10)
+    (while (null laser-distance)
+      (ros::spin-once)
+      (ros::sleep)
+      (if (> (incf cntr) timeout)
+          (progn (format t "something wrong, return from function~%")
+                 (return-from move-forward-with-laser nil))))
+
+    ;; move hand forward
+    (while (> (abs (- laser-distance target-dist)) dist-thre)
+      (send *robot* :angle-vector (send *ri* :state :potentio-vector))
+      (setq ik-target (send (send *robot* arm :end-coords) :copy-worldcoords))
+      (send ik-target :translate each-move-vec)
+      (ik-planning ik-target :arm arm :rotation-axis t :use-torso use-torso)
+      (send *ri* :angle-vector (send *robot* :angle-vector) each-move-time)
+      (setq laser-distance nil)
+      (ros::rate 10)
+      (while (null laser-distance)
+        (ros::spin-once)
+        (ros::sleep)
+        (if (> (incf cntr) timeout)
+            (progn (format t "something wrong, return from function~%")
+                   (return-from move-forward-with-laser nil)))))
+    (return-from move-forward-with-laser t)
+    ))

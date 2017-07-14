@@ -2,6 +2,8 @@
 
 (load "package://hrp2g_utils/euslisp/hrp2g_utils.l")
 (load "package://valve_task/euslisp/fit-wrench-to-shaft.l")
+(load "package://mbzirc_task2_control/euslisp/catch-wrench-util.l")
+(setq robot-name "hrp2g")
 
 (ros::load-ros-manifest "joint_angles_tracker")
 (ros::load-ros-manifest "sensor_msgs")
@@ -106,10 +108,17 @@
               (setq arm :rarm))
           (if (equal mode "rarm_mode")
                   (progn
-                      (if (and (< prev_Circle button_thre) (> Circle button_thre))
+                      (if (and (< prev_Start button_thre) (> Start button_thre))
                           (progn
                               (gripper-servo-disable)
                               (print "gripper-servo-disable")
+                              )
+                          )
+                      (if (and (< prev_Circle button_thre) (> Circle button_thre))
+                          (progn
+                                  (gripper-servo-enable)
+                                  (gripper-servo-pos 0 3)
+                                  (print "gripper-servo-enable")
                               )
                           )
                       (if (and (< prev_Square button_thre) (> Square button_thre))
@@ -119,15 +128,16 @@
                                   (print "gripper-servo-enable")
                                   )
                           )
-                      (if (< Triangle 0)
+                      (if (and (< prev_Triangle button_thre) (> Triangle button_thre))
                               (progn
-;                                  (print "to be implemented")
-                                (send (send *robot* :rarm :end-coords) :draw-on :flush t)
+                                (print "rotate up hand")
+                                (rot-hand-onetime :use-ri t :use-torso nil :move-ang -3 :move-time 700 :teleop t)
                                   )
                           )
-                      (if (< Cross 0)
+                      (if (and (< prev_Cross button_thre) (> Cross button_thre))
                               (progn
-                                  (print "to be implemented")
+                                (print "rotate down hand")
+                                (rot-hand-onetime :use-ri t :use-torso nil :move-ang 3 :move-time 700 :teleop t)
                                   )
                           )
                       )
@@ -156,7 +166,8 @@
           (if (or (> (abs RStick_UD) stick_thre) (> (abs RStick_LR) stick_thre) (> (abs LStick_UD) stick_thre))
                   (progn
                       (setq moveArmGain 50)
-                      (teleop-move-arm-cb arm (scale moveArmGain (float-vector RStick_UD RStick_LR LStick_UD)))
+                      ;;(teleop-move-arm-cb arm (scale moveArmGain (float-vector RStick_UD RStick_LR LStick_UD)))
+                      (teleop-move-onearm-cb arm (scale moveArmGain (float-vector RStick_UD RStick_LR LStick_UD)))
                       )
               )
           (if (and (equal mode "rarm_mode") (< DPad_U button_thre))
@@ -390,6 +401,67 @@
     (if (equal arm :larm)
             (setq in_progress_target_larm_pos target-arm-pos)
         (setq in_progress_target_rarm_pos target-arm-pos))
+    )
+
+(defun teleop-move-onearm-cb (arm delta)
+
+    (format t "delta ~a~%" delta)
+    (if (equal arm :larm)
+            (progn
+                (setq in_progress_target_arm_pos in_progress_target_larm_pos)
+                (setq in_progress_target_arm_rot in_progress_target_larm_rot))
+        (progn
+            (setq in_progress_target_arm_pos in_progress_target_rarm_pos)
+            (setq in_progress_target_arm_rot in_progress_target_rarm_rot))
+        )
+
+    (format t "in_progress_target ~a~%" in_progress_target_arm_pos)
+
+    (setq tmp-angle-vec (send *robot* :angle-vector)) ;; need to save the robot angle vector before calling matchsimwithrobot first to prevet drifting
+    (matchsimwithrobot)
+    (setq current-arm-pos (send (send *robot* arm :end-coords :copy-worldcoords) :pos)) ;; need to use copy-worldcoords as :worldpos returns a reference
+    (setq target-arm-pos (v+ current-arm-pos delta))
+    (format t "target-arm-pos ~a~%" target-arm-pos)
+    (setq target-pos-diff (v- in_progress_target_arm_pos target-arm-pos))
+    (format t "target-pos-diff ~a~%" target-pos-diff)
+    (send *robot* :angle-vector tmp-angle-vec) ;; done calculations, restore model in sim
+
+    ;; check to see that the new target is in the same direction as delta relative to the in progress target to prevent backlash
+    (setq move-arm-thre 0.015)
+    (setq i 0)
+    (while (< i 3)
+        (if (or (< 0 (* (elt target-pos-diff i) (elt delta i))) ;; avoid sending target that is closer to what has already been sent.
+                (< (abs (elt delta i)) move-arm-thre)) ;; don't change the component of the target if the input is zero or too small to prevent drift.
+                (setf (aref target-arm-pos i) (aref in_progress_target_arm_pos i)))
+        (setq i (+ i 1))
+        )
+    (format t "target-arm-pos ~a~%" target-arm-pos)
+
+;    (send *robot* arm :inverse-kinematics (make-coords :pos target-arm-pos :rot in_progress_target_arm_rot)
+;         :thre 0.1
+;         :rthre 0.1)
+
+    (if (equal arm :larm)
+            (setq otherarm :rarm)
+      (setq otherarm :larm)
+    )
+    (send *robot* arm :inverse-kinematics (make-coords :pos target-arm-pos :rot in_progress_target_arm_rot)
+          :rotation-axis t
+          :torso t
+          :link-list (send *robot* :link-list (send *robot* arm :end-coords :parent) (car (send *robot* :torso :links)))
+          :thre (list 0.1 0.1)
+          :rthre (list 0.1 0.1)
+          )
+
+    (moverobot 100)
+
+    (if (equal arm :larm)
+        (progn
+          (setq in_progress_target_larm_pos target-arm-pos)
+          (setq in_progress_target_rarm_pos (send (send (send *robot* :rarm :end-coords) :copy-worldcoords) :pos)))
+      (progn
+        (setq in_progress_target_rarm_pos target-arm-pos)
+        (setq in_progress_target_larm_pos (send (send (send *robot* :larm :end-coords) :copy-worldcoords) :pos))))
     )
 
 (defun move-thumb (arm delta)
