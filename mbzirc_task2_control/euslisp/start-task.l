@@ -15,7 +15,7 @@
   (ros::roseus node-name)
   (if (equal robot "hrp2g")
       (progn ;; for hrp2g
-        (load "package://hrp2v_dynamixel_controller/euslisp/gripper_controller.l")
+        ;;(load "package://hrp2v_dynamixel_controller/euslisp/gripper_controller.l") ;; comment out temporary
         (load "package://hrpsys_ros_bridge_tutorials/euslisp/hrp2g-interface.l")
         (hrp2g-init)
         (setq *robot* *hrp2g*)
