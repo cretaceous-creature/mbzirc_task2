@@ -40,7 +40,7 @@
     (setq start-pose-delta 0)
     (setq turn_count 1)
     (setq start-pose-delta (fit-wrench-to-shaft start-pose-delta))
-    (while (< turn_count 600)
+    (while (< turn_count 5)
         (unless start-pose-delta
             (return-from turn-shaft-full-turn nil))
 
@@ -237,6 +237,8 @@
                                ;; this is to avoid pressing too hard on the shaft so the wrench head can't slide on it
                                (unix::usleep 300000) ;; wait for force reading to settle
                                (setq approach-force (v. (get-offset-force-vector) approach-vector))
+                               (setq max-back 20)
+                               (setq back-cnt 0)
                                (while (> (abs approach-force) touch-lower-thres)
                                  (send target-pose :translate (scale (- approach-inc-dist) approach-vector))
                                  (send *robot* arm :inverse-kinematics target-pose)
@@ -244,7 +246,11 @@
                                  (unix::usleep 300000)
                                  (setq approach-force (v. (get-offset-force-vector) approach-vector))
                                  (format t "approach-force ~a~%" approach-force)
-
+                                 (inc back-cnt)
+                                 (if (> back-cnt max-back)
+                                         (progn
+                                             (print "cannot reach minimum force! return nil")
+                                             (return-from scan-for-contact-state nil)))
                                  )
                                (print "Minimum touch force reached. Exit scan-for-contact-state")
 
@@ -872,15 +878,16 @@
          (format t "hand-to-shaft-coords ~a~%" hand-to-shaft-coords)
          (setq shaft-world-coords (send (send *robot* :rarm :end-coords :copy-worldcoords) :translate (send hand-to-shaft-coords :pos) :world))
          ;;(send shaft-world-coords :rotate (send (send *robot* :rarm :end-coords :copy-worldcoords) :rot))  ;; use hand orientation
-         (setq arm-above-shaft-pos (send (send shaft-world-coords :copy-coords) :translate (float-vector 0 0 (+ wrenchLength 20))))
-
+         (setq arm-above-shaft-pos (send (send shaft-world-coords :copy-coords) :translate (float-vector 0 0 (+ wrenchLength 40))))
+         ;;(setq arm-above-shaft-pos (send (send shaft-world-coords :copy-coords) :translate (float-vector 0 0 (+ wrenchLength 20))))
+         (format t "world shaft above pos ~a~%" arm-above-shaft-pos)
          (unless (send *robot* arm :inverse-kinematics arm-above-shaft-pos)
              (return-from align-wrench-with-shaft-from-recog-pose nil))
 
          (if (boundp `*irtviewer*)
              (send *irtviewer* :draw-objects))
          (moverobot)
-         (send *ri* :wait-interpolation)
+         (unix::sleep 7)
          (return-from align-wrench-with-shaft-from-recog-pose t)
          )
       (progn ;; else if shaft tf not found

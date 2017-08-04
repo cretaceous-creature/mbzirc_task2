@@ -8,7 +8,7 @@
 (defun align-with-panel (&key (target-offset #f(-600 200 0)) (target-rot 0.0) (auto nil) (use-ri t) (timeout 100) (update-time t))
   (start-aligning)
   (let (res)
-      (format t "fit rotation~%")
+      (format t "fit rotation~%"
     (setq res (fit-rotation :use-ri use-ri :auto auto  :timeout timeout :target-rot target-rot :update-time update-time))
     (unless res
       ;;(end-aligning)

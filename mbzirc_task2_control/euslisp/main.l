@@ -211,7 +211,7 @@
     (debugPrint "entered align-base-with-shaft-state")
     ;;;; Execute the state ;;;;
     (setq align-base-with-shaft-state-result (align-with-panel :target-offset #f(-530 460 0)
-                                                               :target-rot 0.05 :use-ri main-use-ri :auto main-auto))
+                                                               :target-rot 0.0 :use-ri main-use-ri :auto main-auto))
 
     ;;;; Goto next state based on te execution result of this state
     (cond
@@ -250,8 +250,13 @@
     
     ;;;; Goto next state based on te execution result of this state
     (cond
-     (turn-wrench-state-result (setq currentState "exit"))
-     ((not turn-wrench-state-result) (setq currentState "alignBaseWithShaft"))
+     (turn-wrench-state-result (progn
+                                   (format t "~%You did it!! Congratulations!!~%~%")
+                                   (task2RecogPose)
+                                   (setq currentState "exit")))
+     ((not turn-wrench-state-result) (progn
+                                         (task2RecogPose)
+                                         (setq currentState "alignBaseWithShaft")))
      )
     (debugPrint "exiting turn-wrench-state")
     )
