@@ -3,11 +3,11 @@
 (load "package://mbzirc_task2_control/euslisp/catch-wrench-util.l")
 
 (defun full-pick (tar &key (arm :rarm) (auto nil) (ready? nil) (use-feedback? t)
-                      (use-torso t) (hand-offset #f(20 -25 0)) (bottom? nil) (feedback-target #f(385 266)))
+                      (use-torso t) (hand-offset #f(20 -25 0)) (bottom? nil) (feedback-target #f(385 266)) (force-check-thre 1.0))
   (start-picking)
   (set-target tar)
   (send reference-time :now)
-  (let ((reach-success nil) ready-state (timeout 100))
+  (let ((reach-success nil) ready-state (timeout 100) z-force)
     (gripper-servo-enable)
     (setq ready-state ready?)
     (tagbody start-state
@@ -37,6 +37,7 @@
                (when (not reach-success)
                  (return-from full-pick nil))))
     (format t "next: catch~%")
+    (get-force-offset)
     (unless auto
       (read-line))
     (move-forward :div 2 :use-ri t :auto auto :use-torso use-torso :use-feedback use-feedback? :time 1500)
@@ -51,8 +52,18 @@
     (unless auto
       (read-line))
     (preset-pick :time 4000)
+    (unix::sleep 1)
+    (setq z-force (abs (v. (get-offset-force-vector) #f(0 0 1.0))))
+    (format t "z-force : ~A~%" z-force)
+    (unix::sleep 1)
     (ready-to-reach :use-ri t :move-gripper t :neck-y 0 :time 5000)
     ;;(end-picking)
+    (if (< z-force force-check-thre)
+            (progn
+                (format t "failed to pick wrech!~%")
+                (return-from full-pick nil))
+        (progn
+            (format t "successfully picked wrech!~%")
+            (return-from full-pick t)))
     )
-  (return-from full-pick t)
   )

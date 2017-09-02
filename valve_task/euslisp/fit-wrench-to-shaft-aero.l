@@ -40,7 +40,7 @@
     (setq start-pose-delta 0)
     (setq turn_count 1)
     (setq start-pose-delta (fit-wrench-to-shaft start-pose-delta))
-    (while (< turn_count 5)
+    (while (< turn_count 4)
         (unless start-pose-delta
             (return-from turn-shaft-full-turn nil))
 
@@ -881,6 +881,10 @@
          (setq arm-above-shaft-pos (send (send shaft-world-coords :copy-coords) :translate (float-vector 0 0 (+ wrenchLength 40))))
          ;;(setq arm-above-shaft-pos (send (send shaft-world-coords :copy-coords) :translate (float-vector 0 0 (+ wrenchLength 20))))
          (format t "world shaft above pos ~a~%" arm-above-shaft-pos)
+
+         ;; random try
+         (send arm-above-shaft-pos :translate (float-vector -25 (- (random 15) 15) 0))
+         (format t "noized world shaft above pos ~a~%" arm-above-shaft-pos)
          (unless (send *robot* arm :inverse-kinematics arm-above-shaft-pos)
              (return-from align-wrench-with-shaft-from-recog-pose nil))
 
@@ -1029,7 +1033,7 @@
                 (send *robot* arm :inverse-kinematics target-pose)
                 (moverobot slide-to-fit-moverobot-time)
                 ;; (send *ri* :wait-interpolation)
-                (unix:usleep (+ (* slide-to-fit-moverobot-time 1000) 500000))
+                (unix:usleep (+ (* slide-to-fit-moverobot-time 1000) 00000))
                 )
             )
         )

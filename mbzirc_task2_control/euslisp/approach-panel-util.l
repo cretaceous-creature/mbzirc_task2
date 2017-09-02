@@ -31,7 +31,7 @@
         (setq msg-log msg)
         (setq *panel_pose* (send (send *panel_pose* :copy-worldcoords) :translate
                                (float-vector
-                                (- (/ (* (send (send msg :dimensions) :x) 1000) 2.0)) 0 0)))) ;; get front position
+                                (- (/ (* (send (send msg :dimensions) :z) 1000) 2.0)) 0 0) :world)))) ;; get front position
   ))
 
 (defun panel-point-cb (msg)
@@ -92,7 +92,7 @@
   (when (equal target-offset #f(0 0 0))
     (format t "Target offset is 0. Move base?~%")
     (read-line))
-  (let* ((cntr 0) (timeout 150) *target_pose* target_x target_theta target_time_x)
+  (let* ((cntr 0) (timeout 250) *target_pose* target_x target_theta target_time_x)
     (setq *panel_pose* nil)
     (ros::rate 10)
     (when update-time
@@ -105,17 +105,37 @@
 
     ;;move to panel
     ;;(setq target-offset (scale 1000 target-offset)) ;; roseus to ros
-    (setq *target_pose* (send (send *panel_pose* :copy-worldcoords) :translate target-offset :world))
-    (setq target-cp (send *target_pose* :copy-worldcoords))
-    (setq target_x (min (sqrt (+ (* (elt (send *target_pose* :worldpos) 0) (elt (send *target_pose* :worldpos) 0))
-                                 (* (elt (send *target_pose* :worldpos) 1) (elt (send *target_pose* :worldpos) 1))))
-                        max_dist))
-      (if (< (elt (send *target_pose* :worldpos) 0) 0)
-              (setq target_x (- target_x))
-          )
-    (setq target_theta (atan (/ (elt (send *target_pose* :worldpos) 1) (elt (send *target_pose* :worldpos) 0))))
-    (format t "panel found. panel position is x: ~A y: ~A~%go to x: ~A theta: ~A~%"
-            (elt (send *panel_pose* :worldpos) 0) (elt (send *panel_pose* :worldpos) 1) target_x target_theta)
+    (if middle-state
+            (progn
+                (setq *target_pose* (send (send *panel_pose* :copy-worldcoords) :translate target-offset :world))
+                (setq target-cp (send *target_pose* :copy-worldcoords))
+                (setq target_x (min (sqrt (+ (* (elt (send *target_pose* :worldpos) 1) (elt (send *target_pose* :worldpos) 1))
+                                             (* (elt (send *target_pose* :worldpos) 0) (elt (send *target_pose* :worldpos) 0))))
+                                    max_dist))
+                (if (< (elt (send *target_pose* :worldpos) 0) 0)
+                        (setq target_x (- target_x))
+                    )
+                (setq target_theta (atan (/ (elt (send *target_pose* :worldpos) 1) (elt (send *target_pose* :worldpos) 0))))
+                (if (< (abs target_theta) 0.1)
+                        (setq target_theta 0))
+                (format t "panel found. panel position is x: ~A y: ~A~%go to x: ~A theta: ~A~%"
+                        (elt (send *panel_pose* :worldpos) 0) (elt (send *panel_pose* :worldpos) 1) target_x target_theta))
+        (progn
+            (setq *target_pose* (send (send *panel_pose* :copy-worldcoords) :translate target-offset :world))
+            (setq target-cp (send *target_pose* :copy-worldcoords))
+            (setq target_x (min (sqrt (+ (* (elt (send *target_pose* :worldpos) 1) (elt (send *target_pose* :worldpos) 1))
+                                         (* (elt (send *target_pose* :worldpos) 2) (elt (send *target_pose* :worldpos) 2))))
+                                max_dist))
+            ;;(if (< (elt (send *target_pose* :worldpos) 0) 0)
+            (if (< target_x 0)
+                    (setq target_x (- target_x))
+                )
+            (setq target_theta (atan (/ (elt (send *target_pose* :worldpos) 1) (elt (send *target_pose* :worldpos) 2))))
+            (if (< (abs target_theta) 0.1)
+                    (setq target_theta 0))
+            (format t "panel found. panel position is x: ~A y: ~A~%go to x: ~A theta: ~A~%"
+                    (elt (send *panel_pose* :worldpos) 2) (elt (send *panel_pose* :worldpos) 1) target_x target_theta)
+            ))
     (unless auto
         (read-line))
     (move-base target_x target_theta :use-ri use-ri)
@@ -166,12 +186,12 @@
                     (unless auto
                         (format t "panel found. rotate base ~A deg.~%" panel-dir)
                         (read-line))
-                    (move-base 0 (deg2rad panel-dir) :use-ri use-ri)
-                    (send *robot* :rarm :shoulder-y :joint-angle 0)
-                    (moveRobot)
+                    ;;(move-base 0 (deg2rad panel-dir) :use-ri use-ri)
+                    ;;(send *robot* :rarm :shoulder-y :joint-angle 0)
+                    ;;(moveRobot)
                     (return-from look-around t))))))
 
-(defun check-front (&key (update-time t) (timeout 150))
+(defun check-front (&key (update-time t) (timeout 250))
     (let ((cntr 0))
         (setq detect_published nil)
         (when update-time

@@ -26,11 +26,10 @@
 (setq max-side-motion-time 3)
 (setq side-motion-onetime-dist 2500)
 (setq x-motion-onetime-dist 1500)
-(setq first-side-motion-dir -1);; 1 to right, -1 to left
+(setq first-side-motion-dir 1);; 1 to right, -1 to left
 
 (setq side-motion-count 0)
 (setq side-motion-dir first-side-motion-dir)
-
 
 ;; initial guess of position of the panel
 (setq init_x 21000)
@@ -51,6 +50,10 @@
 ;; (setq currentState "alignBaseWithShaft")
 ;;(setq currentState "laserFarRange")
 
+(defun run-measure (func)
+    (setq runtime (bench2 (funcall func)))
+    (format t "function: ~A, runtime: ~A~%" (elt func 1) runtime))
+
 ;;;;; the main state machine ! ;;;;;
 (defun exec_task2 ()
 
@@ -70,6 +73,31 @@
          ((equal currentState "turnWrench") (turn-wrench-state))
          )
         )
+    )
+
+;;;;; the main state machine ! ;;;;;
+(defun exec_task2_measure ()
+    (setq ttime (bench2
+                 (progn
+                     (setq isExit nil)
+                     (while (not (equal currentState "exit"))
+                         (cond
+                          ((equal currentState "goToInitPosition") (run-measure #'go-to-init-position-state))
+                          ((equal currentState "laserFarRange") (run-measure #'laser-far-range-state))
+                          ((equal currentState "runArena") (run-measure #'run-arena-state))
+                          ((equal currentState "farRange") (run-measure #'far-range-state))
+                          ((equal currentState "midRange") (run-measure #'mid-range-state))
+                          ((equal currentState "shortRange") (run-measure #'short-range-state))
+                          ((equal currentState "aligning") (run-measure #'aligning-state))
+                          ((equal currentState "pickWrench") (run-measure #'pick-wrench-state))
+                          ((equal currentState "alignBaseWithShaft") (run-measure #'align-base-with-shaft-state))
+                          ((equal currentState "alignWrenchWithShaft") (run-measure #'align-wrench-with-shaft-state))
+                          ((equal currentState "turnWrench") (run-measure #'turn-wrench-state))
+                          )
+                         )
+                     ))
+          )
+    (format t "Total run time : ~A~%" ttime)
     )
 
 ;;;;;;;;;;;;;  Go to Init Position State ;;;;;;;;;;;;;
@@ -96,11 +124,12 @@
     (debugPrint "entered run-arena-state")
     ;;;;; Execute the state ;;;;
     ;; navigate to the inital guessed position of the panel
-    (setq run-arena-state-result (side-motion :use-ri main-use-ri))
-
+    ;;(setq run-arena-state-result (side-motion :use-ri main-use-ri))
+    (move-base 2000 0 :use-ri t)
+    (setq run-arena-state-result t)
     ;;;; Goto next state based on the execution result of this state
     (cond
-     (run-arena-state-result (progn (task2recogpose)(setq currentState "midRange")))
+     (run-arena-state-result (progn (setq currentState "farRange")))
      ((not run-arena-state-result) (setq currentState "exit"))
      )
     (debugPrint "exiting run-arena-state")
@@ -130,7 +159,7 @@
     
     (debugPrint "entered far-range-state")
     ;;;; Execute the state ;;;;
-    (setq far-range-state-result (long-approach :use-ri main-use-ri :auto main-auto ))
+    (setq far-range-state-result (long-approach :use-ri main-use-ri :auto main-auto :start-angle -30 :end-angle 30))
     
     ;;;; Goto next state based on te execution result of this state
     (cond
@@ -146,8 +175,11 @@
     (debugPrint "entered mid-range-state")
     ;;;; Execute the state ;;;;
     ;; (setq mid-range-state-result (middle-approach-look-right :use-ri main-use-ri :auto main-auto ))
-        (setq mid-range-state-result (middle-approach :use-ri main-use-ri :auto main-auto ))
-    
+    (setq mid-range-state-result (middle-approach :use-ri main-use-ri :auto main-auto ))
+    ;;(setq mid-range-state-result t)
+    ;;(move-base 12600 0 :use-ri t)
+    ;;(prepare-to-align :use-ri t)
+    (end-approach)
     ;;;; Goto next state based on te execution result of this state
     (cond
      (mid-range-state-result (setq currentState "shortRange"))
@@ -178,7 +210,8 @@
     
     (debugPrint "entered aligning-state")
     ;;;; Execute the state ;;;;
-    (setq aligning-state-result (align-with-panel :use-ri main-use-ri :auto main-auto))
+    (setq aligning-state-result (align-with-panel :use-ri main-use-ri :auto main-auto
+                                                  :target-offset #f(-600 300 0) :pos_tolerance 70 :rot_tolerance 0.2))
     ;;(setq aligning-state-result (laser-align-with-panel (- 900 dim) 200))
     
     ;;;; Goto next state based on te execution result of this state
@@ -195,13 +228,13 @@
     
     (debugPrint "entered pick-wrench-state")
     ;;;; Execute the state ;;;;
-    (setq pick-wrench-state-result (full-pick wrench_target :auto main-auto :ready? t))
+    (setq pick-wrench-state-result (full-pick wrench_target :auto main-auto :ready? t :use-feedback? t))
     
     ;;;; Goto next state based on te execution result of this state
     (cond
      (pick-wrench-state-result (setq currentState "alignBaseWithShaft"))
-     ((not pick-wrench-state-result)  (progn (task2RecogPose)
-                                             (setq currentState "aligning"))))
+      ((not pick-wrench-state-result)  (progn (task2RecogPose)
+                                              (setq currentState "aligning"))))
     (debugPrint "exiting pick-wrench-state")
     )
 
@@ -210,7 +243,7 @@
 
     (debugPrint "entered align-base-with-shaft-state")
     ;;;; Execute the state ;;;;
-    (setq align-base-with-shaft-state-result (align-with-panel :target-offset #f(-530 460 0)
+    (setq align-base-with-shaft-state-result (align-with-panel :target-offset #f(-550 460 0)
                                                                :target-rot 0.0 :use-ri main-use-ri :auto main-auto))
 
     ;;;; Goto next state based on te execution result of this state
@@ -236,7 +269,7 @@
      (align-wrench-with-shaft-state-result (setq currentState "turnWrench"))
      ((not align-wrench-with-shaft-state-result) (progn
                                                      (task2RecogPose)
-                                                     (setq currentState "alignBaseWithShaft"))) ;;@TODO: handle failure case
+                                                     (setq currentState "alignWrenchWithShaft"))) ;;@TODO: handle failure case
      )
     (debugPrint "exiting align-wrench-with-shaft-state")
     )

@@ -7,21 +7,26 @@
 (defun long-approach (&key (use-ri t) (auto nil) (start-angle -90) (end-angle 90))
   (start-long-approach)
   (let ((panel_found nil) (approach_res nil) (cntr 0))
-    (format t "next: look around~%")
-    (unless auto
-      (read-line))
-    (resetdrivingpose)
-    (setq panel_found (look-around :use-ri use-ri :auto auto :start-angle start-angle :end-angle end-angle))
-    (format t "done: look around~%")
-    (when (null panel_found)
-      (end-approach)
-      (return-from long-approach nil))
+    ;; (format t "next: look around~%")
+    ;; (unless auto
+    ;;   (read-line))
+    ;; (resetdrivingpose)
+    ;; (setq panel_found (look-around :use-ri use-ri :auto auto :start-angle start-angle :end-angle end-angle))
+    ;; (format t "done: look around~%")
+    ;; (when (null panel_found)
+    ;;   (end-approach)
+    ;;   (return-from long-approach nil))
 
     ;; approach to panel
     (format t "next: approach panel~%")
     (unless auto
       (read-line))
-    (setq approach_res (approach-panel-onetime :use-ri use-ri :target-offset #f(-4500 0 0) :auto auto))
+    (setq approach_res (approach-panel-onetime :use-ri use-ri :target-offset #f(0 0 -6500) :auto auto))
+    (format t "done: approach panel~%")
+    (format t "next: approach panel~%")
+    (unless auto
+      (read-line))
+    (setq approach_res (approach-panel-onetime :use-ri use-ri :target-offset #f(0 0 -3000) :auto auto))
     (format t "done: approach panel~%")
     (end-approach)
     (return-from long-approach approach_res)))
@@ -52,18 +57,22 @@
 (defun middle-approach (&key (use-ri t) (auto nil))
   (let (res)
     (start-middle-approach)
-    (setq res (approach-panel-onetime :use-ri use-ri :target-offset #f(-2000 0 0) :auto auto))
+    (setq res (approach-panel-onetime :use-ri use-ri :target-offset #f(-3000 0 0) :auto auto))
+    (unless res
+      (end-approach)
+      (return-from middle-approach nil))
+    (setq res (approach-panel-onetime :use-ri use-ri :target-offset #f(-1200 200 0) :auto auto))
     (unless res
       (end-approach)
       (return-from middle-approach nil))
     (prepare-to-align :use-ri use-ri)
-    (setq res (approach-panel-onetime :use-ri use-ri :target-offset #f(0 1200 0) :auto auto))
+    ;;(setq res (approach-panel-onetime :use-ri use-ri :target-offset #f(-700 2000 0) :auto auto))
     (end-approach)
     (return-from middle-approach res)))
 
 (defun short-approach (&key (use-ri t) (auto nil) (rot-dir 1))
-  (rough-align :use-ri use-ri :auto auto)
-  (go-to-front-of-panel :use-ri use-ri :auto auto :rot-dir rot-dir))
+  ;;(rough-align :use-ri use-ri :auto auto)
+  (go-to-front-of-panel :use-ri use-ri :auto auto :rot-dir rot-dir :turn t))
 
 (defun rough-align (&key (use-ri t) (auto nil))
   (let (res)
