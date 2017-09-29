@@ -80,7 +80,13 @@ class NetUsbCam
             cam_info_.width = 1024;
             fillImage(img_, "rgb8", 1024, 1280, 1280*3, (uint8_t*)(buffer));
           }
-
+        else if(buffer_size == 5760000)
+          {
+            cam_info_.height = 1200;
+            cam_info_.width = 1600;
+            fillImage(img_, "rgb8", 1200, 1600, 1600*3, (uint8_t*)(buffer));
+          }
+        ROS_INFO("Got Image done  Size %d  \n", buffer_size);
         info_pub_.publish(cam_info_);
         image_pub_.publish(img_);
 
@@ -93,7 +99,7 @@ public:
   {
     nhp_.param("save_flag", save_flag_, false);
     nhp_.param("cam_index", cam_index_, 0);
-    nhp_.param("fps", fps_, 20);
+    nhp_.param("fps", fps_, 30);
 
     result_ = NETUSBCAM_Init();// look for ICubes
     if(result_ == 0)
@@ -117,7 +123,7 @@ public:
       ROS_ERROR("Error: GetName; Result_ = %d\n", result_);
       return;
     }
-    ROS_INFO("Model name: %s \n\n",c_cam_name);
+    ROS_INFO("Model name: %s",c_cam_name);
 
     // set the camera clock lower, if a lot of bad frames arriving
     result_ = NETUSBCAM_SetCamParameter(cam_index_, REG_PLL, fps_);
@@ -148,7 +154,7 @@ public:
     if(result_!=0){
       ROS_ERROR("Error: Start; Result_ = %d\n", result_);
       return; }
-
+    ROS_INFO("Init done");
     //pause(); // wait for Ctrl+C
   }
 
