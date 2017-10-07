@@ -1,7 +1,7 @@
 /************************************************************************
  *
  *  Module:     NETUSBtest.c
- *  Long name:    
+ *  Long name:
  *
  *  Runtime Env.: Linux
  *  Author(s):    gde (net gmbh)
@@ -55,7 +55,6 @@ class NetUsbCam
 
     if(buffer_size==0){// badframe arrived (this happens here, when (REG_CALLBACK_BR_FRAMES==1)
       n_bad_cnt_++;
-
     }
     else // good frame arrived
       {
@@ -84,11 +83,36 @@ class NetUsbCam
           {
             cam_info_.height = 1200;
             cam_info_.width = 1600;
-            fillImage(img_, "rgb8", 1200, 1600, 1600*3, (uint8_t*)(buffer));
+            fillImage(img_, "bgr8", 1200, 1600, 1600*3, (uint8_t*)(buffer));
           }
-        ROS_INFO("Got Image done  Size %d  \n", buffer_size);
+        else if(buffer_size == 1920000)
+          {
+            cam_info_.height = 1200;
+            cam_info_.width = 1600;
+            fillImage(img_, "mono8", 1200, 1600, 1600, (uint8_t*)(buffer));
+          }
+        //swap channels
+        cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(img_, img_.encoding);
+        cv::Mat img = cv_ptr->image;
+        // std::vector<cv::Mat> channels;
+        // cv::split(img, channels);
+        // std::vector<cv::Mat> channels_swapped;
+        // channels_swapped.push_back(channels.at(0));
+        // channels_swapped.push_back(channels.at(1));
+        // channels_swapped.push_back(channels.at(2));
+        // cv::merge(channels_swapped, img);
+
+        float exp;
+        NETUSBCAM_GetExposure(0, &exp);
+        ROS_INFO("Exposure time: %lf\n", exp);
+
+        // ROS_INFO("Image value:  Red: %d Green: %d Blue: %d", channels_swapped.at(0).at<uchar>(img.rows/2, img.cols/2),
+        //          channels_swapped.at(1).at<uchar>(img.rows/2, img.cols/2),
+        //          channels_swapped.at(2).at<uchar>(img.rows/2, img.cols/2));
+
         info_pub_.publish(cam_info_);
         image_pub_.publish(img_);
+        //image_pub_.publish(cv_bridge::CvImage(img_.header, img_.encoding, img).toImageMsg());
 
       }
     ROS_INFO("Got Image;  GoodFr: %d ,BadFr: %d , Size %d  \n",n_good_cnt_,n_bad_cnt_,buffer_size);
@@ -105,16 +129,14 @@ public:
     if(result_ == 0)
       {
         ROS_ERROR("No device\n");
-        return; 
+        return;
       }
 
-    //signal(SIGINT, SignalHandler);		// register signal handler for Ctrl+C
-
-    result_ = NETUSBCAM_Open(cam_index_); // open camera 
+    result_ = NETUSBCAM_Open(cam_index_); // open camera
     if(result_ != 0)
       {
         ROS_ERROR("Error: Open; Result_ = %d\n", result_);
-        return; 
+        return;
       }
 
     char c_cam_name[20]; // get camera model name
@@ -125,29 +147,31 @@ public:
     }
     ROS_INFO("Model name: %s",c_cam_name);
 
+    //== set camera parameters ==
     // set the camera clock lower, if a lot of bad frames arriving
     result_ = NETUSBCAM_SetCamParameter(cam_index_, REG_PLL, fps_);
     if(result_!=0){
       ROS_ERROR("Error: REG_PLL; Result_ = %d\n", result_);
-      return; } 
+      return; }
 
     // if active, badframes are sent to the callback with buffersize = 0
-    result_ = NETUSBCAM_SetCamParameter(cam_index_, REG_CALLBACK_BR_FRAMES,1);
+    result_ = NETUSBCAM_SetCamParameter(cam_index_, REG_CALLBACK_BR_FRAMES, 0);
     if(result_!=0){
       ROS_ERROR("Error: REG_CALLBACK_BR_FRAMES; Result_ = %d\n", result_);
-      return; } 
+      return; }
 
+    result_ = NETUSBCAM_SetParamAuto(cam_index_, REG_EXPOSURE_TIME, 1);
+    if(result_!=0){
+      ROS_ERROR("Error: Set AUTO Exposure; Result_ = %d\n", result_);
+      return; }
+    NETUSBCAM_SetCamParameter(0, REG_EXPOSURE_TARGET, 30);
+    //== set camera parameters ==//
 
     result_ = NETUSBCAM_SetCallback(cam_index_, CALLBACK_RGB, &NetUsbCam::GetImage ,  NULL);
-    // set the callback to get the frame buffer
-    //typedef int (*test_func)(void*, unsigned int, void*);
-    //boost::function<int(void*, unsigned int, void*)> call_func;
-    //call_func = boost::bind(&NetUsbCam::GetImage, this, _1, _2, _3);
-    //result_ = NETUSBCAM_SetCallback(cam_index_, CALLBACK_RGB, *call_func.target<int(*)(void*, unsigned int, void*)>(),  NULL);
-
     if(result_!=0){
       ROS_ERROR("Error: SetCallback; Result_ = %d\n", result_);
-      return; } 
+      return; }
+
 
     // start streaming of camera
     result_ = NETUSBCAM_Start(cam_index_);
@@ -155,7 +179,6 @@ public:
       ROS_ERROR("Error: Start; Result_ = %d\n", result_);
       return; }
     ROS_INFO("Init done");
-    //pause(); // wait for Ctrl+C
   }
 
   ~NetUsbCam()

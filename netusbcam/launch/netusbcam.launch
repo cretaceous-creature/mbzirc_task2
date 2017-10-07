@@ -4,7 +4,7 @@
   <arg name="type" default="mono" />
 
 <group ns= "handeye">
- <node name="netusbcam" pkg="netusbcam" type="netusbtest_node" output="log" respawn="true">
+ <node name="netusbcam" pkg="netusbcam" type="netusbtest_node" output="screen" respawn="true">
    <param name="fps" value="15" />
    <remap from = "/net_usb_cam/image_raw" to ="/handeye/image_color" />
    <remap from = "/net_usb_cam/camera_info" to ="/handeye/camera_info" />
