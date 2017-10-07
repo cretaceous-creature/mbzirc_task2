@@ -26,14 +26,12 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
-
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/fill_image.h>
 #include <sensor_msgs/CameraInfo.h>
 
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
-
 
 #include <opencv2/video/tracking.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -43,6 +41,8 @@
 
 class NetUsbCam
 {
+
+private:
   static int GetImage(void *buffer, unsigned int buffer_size, void *context)
   {
     static int n_good_cnt_ = 0;
@@ -51,7 +51,7 @@ class NetUsbCam
     static ros::Publisher info_pub_;
     static ros::NodeHandle nh;
     sensor_msgs::Image img_;
-    sensor_msgs::CameraInfo cam_info_;
+    sensor_msgs::CameraInfo current_cam_info_;
 
     if(buffer_size==0){// badframe arrived (this happens here, when (REG_CALLBACK_BR_FRAMES==1)
       n_bad_cnt_++;
@@ -65,57 +65,37 @@ class NetUsbCam
           }
         n_good_cnt_++;
 
-        cam_info_.header.stamp = ros::Time::now();
-        img_.header.stamp =cam_info_.header.stamp;
-        if(buffer_size == 1082880)
-          {
-            cam_info_.height = 480;
-            cam_info_.width = 752;
-            fillImage(img_, "rgb8", 480, 752, 752*3, (uint8_t*)(buffer));
+        if(context){
+          current_cam_info_ = *(sensor_msgs::CameraInfo*)context;
+          //ROS_INFO("width: %d height: %d", current_cam_info_.width, current_cam_info_.height);
+          fillImage(img_, "rgb8", current_cam_info_.height, current_cam_info_.width,
+                    current_cam_info_.width*3, (uint8_t*)(buffer));
+        } else {
+          if(buffer_size == 1082880)
+            {
+              current_cam_info_.height = 480;
+              current_cam_info_.width = 752;
+              fillImage(img_, "rgb8", 480, 752, 752*3, (uint8_t*)(buffer));
+            }
+          else if(buffer_size == 3932160)
+            {
+              current_cam_info_.height = 1024;
+              current_cam_info_.width = 1280;
+              fillImage(img_, "rgb8", 1024, 1280, 1280*3, (uint8_t*)(buffer));
           }
-        else if(buffer_size == 3932160)
-          {
-            cam_info_.height = 1280;
-            cam_info_.width = 1024;
-            fillImage(img_, "rgb8", 1024, 1280, 1280*3, (uint8_t*)(buffer));
-          }
-        else if(buffer_size == 5760000)
-          {
-            cam_info_.height = 1200;
-            cam_info_.width = 1600;
-            fillImage(img_, "bgr8", 1200, 1600, 1600*3, (uint8_t*)(buffer));
-          }
-        else if(buffer_size == 1920000)
-          {
-            cam_info_.height = 1200;
-            cam_info_.width = 1600;
-            fillImage(img_, "mono8", 1200, 1600, 1600, (uint8_t*)(buffer));
-          }
-        //swap channels
-        cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(img_, img_.encoding);
-        cv::Mat img = cv_ptr->image;
-        // std::vector<cv::Mat> channels;
-        // cv::split(img, channels);
-        // std::vector<cv::Mat> channels_swapped;
-        // channels_swapped.push_back(channels.at(0));
-        // channels_swapped.push_back(channels.at(1));
-        // channels_swapped.push_back(channels.at(2));
-        // cv::merge(channels_swapped, img);
+          else if(buffer_size == 5760000)
+            {
+              current_cam_info_.height = 1200;
+              current_cam_info_.width = 1600;
+              fillImage(img_, "rgb8", 1200, 1600, 1600*3, (uint8_t*)(buffer));
+            }
+        }
+        current_cam_info_.header.stamp = ros::Time::now();
+        img_.header.stamp = current_cam_info_.header.stamp;
 
-        float exp;
-        NETUSBCAM_GetExposure(0, &exp);
-        ROS_INFO("Exposure time: %lf\n", exp);
-
-        // ROS_INFO("Image value:  Red: %d Green: %d Blue: %d", channels_swapped.at(0).at<uchar>(img.rows/2, img.cols/2),
-        //          channels_swapped.at(1).at<uchar>(img.rows/2, img.cols/2),
-        //          channels_swapped.at(2).at<uchar>(img.rows/2, img.cols/2));
-
-        info_pub_.publish(cam_info_);
+        info_pub_.publish(current_cam_info_);
         image_pub_.publish(img_);
-        //image_pub_.publish(cv_bridge::CvImage(img_.header, img_.encoding, img).toImageMsg());
-
       }
-    ROS_INFO("Got Image;  GoodFr: %d ,BadFr: %d , Size %d  \n",n_good_cnt_,n_bad_cnt_,buffer_size);
   }
 
 public:
@@ -124,6 +104,7 @@ public:
     nhp_.param("save_flag", save_flag_, false);
     nhp_.param("cam_index", cam_index_, 0);
     nhp_.param("fps", fps_, 30);
+    nhp_.param("param_file", param_file_, std::string(""));
 
     result_ = NETUSBCAM_Init();// look for ICubes
     if(result_ == 0)
@@ -167,11 +148,62 @@ public:
     NETUSBCAM_SetCamParameter(0, REG_EXPOSURE_TARGET, 30);
     //== set camera parameters ==//
 
-    result_ = NETUSBCAM_SetCallback(cam_index_, CALLBACK_RGB, &NetUsbCam::GetImage ,  NULL);
+    // load camera calibration file
+    ROS_INFO("param file : %s\n", param_file_.c_str());
+    cv::FileStorage fs(param_file_, cv::FileStorage::READ);
+    if (!fs.isOpened()){
+      ROS_WARN("Camera Param File can not be opened.\n");
+      calibrated_ = false;
+    } else {
+      cam_info_.width = (int)fs["image_width"];
+      cam_info_.height = (int)fs["image_height"];
+      cam_info_.distortion_model = (std::string)fs["distortion_model"];
+
+      cv::FileNode D = fs["distortion_coefficients"]["data"];
+      std::vector<double> D_vec;
+      for(cv::FileNodeIterator it = D.begin(); it != D.end(); ++it){
+        D_vec.push_back(*it);
+      }
+      cam_info_.D = D_vec;
+
+      cv::FileNode K = fs["camera_matrix"]["data"];
+      std::vector<double> K_vec;
+      for(cv::FileNodeIterator it = K.begin(); it != K.end(); ++it){
+        K_vec.push_back(*it);
+      }
+      boost::array<double, 9ul> K_arr;
+      std::memcpy(&K_arr[0], &K_vec[0], sizeof(double)*9);
+      cam_info_.K = K_arr;
+
+      cv::FileNode R = fs["rectification_matrix"]["data"];
+      std::vector<double> R_vec;
+      for(cv::FileNodeIterator it = R.begin(); it != R.end(); ++it){
+        R_vec.push_back(*it);
+      }
+      boost::array<double, 9ul> R_arr;
+      std::memcpy(&R_arr[0], &R_vec[0], sizeof(double)*9);
+      cam_info_.R = R_arr;
+
+      cv::FileNode P = fs["projection_matrix"]["data"];
+      std::vector<double> P_vec;
+      for(cv::FileNodeIterator it = P.begin(); it != P.end(); ++it){
+        P_vec.push_back(*it);
+      }
+      boost::array<double, 12ul> P_arr;
+      std::memcpy(&P_arr[0], &P_vec[0], sizeof(double)*12);
+      cam_info_.P = P_arr;
+      calibrated_ = true;
+    }
+
+    if(calibrated_){
+      result_ = NETUSBCAM_SetCallback(cam_index_, CALLBACK_RGB, &NetUsbCam::GetImage ,  &cam_info_);
+    } else {
+      result_ = NETUSBCAM_SetCallback(cam_index_, CALLBACK_RGB, &NetUsbCam::GetImage ,  NULL);
+    }
     if(result_!=0){
       ROS_ERROR("Error: SetCallback; Result_ = %d\n", result_);
-      return; }
-
+      return;
+    }
 
     // start streaming of camera
     result_ = NETUSBCAM_Start(cam_index_);
@@ -206,21 +238,24 @@ protected:
   int cam_index_;
   int result_;
   int fps_;
+  std::string param_file_;
+  bool calibrated_;
+  sensor_msgs::CameraInfo cam_info_;
 
   void SaveRaw(unsigned char *buffer, unsigned int buffer_size, const char* cName)
   {
     FILE *outfile = fopen( cName, "wb");
     if ( !outfile ){
       printf("Error fopen\n");
-      return; }	
+      return; }
     fwrite (buffer,1,buffer_size,outfile );
-    fclose( outfile );	
+    fclose( outfile );
   }
 
 };
 
 int main(int argc, char** argv)
-{ 
+{
   ros::init(argc, argv, "netusbcam");
   ros::NodeHandle n;
   ros::NodeHandle np("~");

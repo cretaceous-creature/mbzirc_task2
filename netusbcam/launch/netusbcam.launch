@@ -6,11 +6,11 @@
 <group ns= "handeye">
  <node name="netusbcam" pkg="netusbcam" type="netusbtest_node" output="screen" respawn="true">
    <param name="fps" value="15" />
-   <remap from = "/net_usb_cam/image_raw" to ="/handeye/image_color" />
-   <remap from = "/net_usb_cam/camera_info" to ="/handeye/camera_info" />
+   <param name="param_file" value="$(find netusbcam)/cfg/param_KS4133CU_101510501.yaml" />
  </node>
-
+ <node name="netusbcam_proc" pkg="image_proc" type="image_proc" output="screen" respawn="true" />
 </group>
+
   <node name="image_view" pkg="image_view" type="image_view" respawn="false" output="screen" unless="$(arg headless)">
     <remap from="image" to="/net_usb_cam/image_color"/>
     <param name="autosize" value="true" />
